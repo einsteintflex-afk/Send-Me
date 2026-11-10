@@ -3,7 +3,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 
 from ..deps import DB
-from ..models import (Availability, Campus, Category, Product, Promotion, SearchLog, Shop, University)
+from ..models import (Availability, Campus, Category, Hostel, Product, Promotion, SearchLog, Shop, University)
 from ..security import decode_token
 from ..serializers import product_out, shop_out
 
@@ -128,3 +128,9 @@ def popular(db: DB):
 def promotions(db: DB):
     return [{"id": p.id, "title": p.title, "body": p.body, "image_url": p.image_url}
             for p in db.scalars(select(Promotion).where(Promotion.active.is_(True)))]
+
+
+@router.get("/campuses/{campus_id}/hostels")
+def hostels(campus_id: int, db: DB):
+    return [{"id": h.id, "name": h.name} for h in db.scalars(
+        select(Hostel).where(Hostel.campus_id == campus_id, Hostel.active.is_(True)).order_by(Hostel.sort_order, Hostel.id))]

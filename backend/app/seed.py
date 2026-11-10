@@ -3,9 +3,13 @@ No prices, stock, phone numbers or riders are invented. Run: python -m app.seed"
 import os
 from sqlalchemy import select
 from .db import SessionLocal
-from .models import Campus, Category, Role, Shop, University, User
+from .models import Campus, Category, Hostel, Role, Shop, University, User
 from .security import hash_password
 
+# Exactly as supplied by the business. Edit via the admin API, not here, once live.
+HOSTELS = [
+    "D block(College of health sciences student hostel)", "B- block", "R-block", "BQ", "M-block", "N- block",
+]
 CATEGORIES = [
     ("drinks", "Drinks & Beverages"), ("snacks", "Snacks & Confectionery"), ("breakfast", "Breakfast & Cereals"),
     ("noodles", "Noodles & Quick Meals"), ("bread", "Bread & Bakery"), ("dairy", "Milk, Dairy & Eggs"),
@@ -30,6 +34,9 @@ def seed(db, university_name: str | None = None):
         campus = Campus(university_id=uni.id, name="Main Campus")
         db.add(campus)
         db.flush()
+    for i, hname in enumerate(HOSTELS):
+        if not db.scalar(select(Hostel).where(Hostel.campus_id == campus.id, Hostel.name == hname)):
+            db.add(Hostel(campus_id=campus.id, name=hname, sort_order=i))
     if not db.scalar(select(Shop).where(Shop.slug == "ugmsa-mini-mart")):
         db.add(Shop(campus_id=campus.id, name="UGMSA Mini Mart", slug="ugmsa-mini-mart", location="Opposite R Block",
                     phones=[]))  # phone numbers must be entered by the shop or admin

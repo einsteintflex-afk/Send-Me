@@ -57,3 +57,13 @@ def test_suspended_user_blocked(client, student, admin):
     assert client.post(f"/admin/users/{uid}/active", headers=admin, json={"is_active": False}).status_code == 200
     assert client.get("/auth/me", headers=student).status_code == 401
     assert client.post("/auth/login", json={"identifier": "ama@x.com", "password": "password123"}).status_code == 403
+
+
+def test_hostel_list_seeded_exactly_and_admin_managed(client, admin):
+    camp = client.get("/universities").json()[0]["campuses"][0]["id"]
+    names = [h["name"] for h in client.get(f"/campuses/{camp}/hostels").json()]
+    assert names == ["D block(College of health sciences student hostel)", "B- block", "R-block", "BQ", "M-block", "N- block"]
+    hid = client.post("/admin/hostels", headers=admin, json={"campus_id": camp, "name": "Z block"}).json()["id"]
+    assert client.post("/admin/hostels", headers=admin, json={"campus_id": camp, "name": "Z block"}).status_code == 409
+    client.post(f"/admin/hostels/{hid}/active", headers=admin, json={"active": False})
+    assert "Z block" not in [h["name"] for h in client.get(f"/campuses/{camp}/hostels").json()]

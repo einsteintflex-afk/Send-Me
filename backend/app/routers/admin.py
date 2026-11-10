@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, or_, select
 
 from ..deps import DB, CurrentUser, SuperAdmin
-from ..models import (AuditLog, Campus, Category, Complaint, DeliveryPricing, Order, OrderStatus, Payment,
+from ..models import (AuditLog, Campus, Category, Complaint, Hostel, DeliveryPricing, Order, OrderStatus, Payment,
                       PaymentStatus, Promotion, Review, Rider, Role, Shop, ShopStaff, SystemSetting, University, User)
 from ..security import hash_password
 from ..serializers import f, shop_out
@@ -313,3 +313,32 @@ def put_setting(key: str, body: SettingIn, admin: CurrentUser, db: DB):
 @router.get("/settings")
 def get_settings_(db: DB):
     return {r.key: r.value for r in db.scalars(select(SystemSetting))}
+
+
+class HostelIn(BaseModel):
+    campus_id: int
+    name: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/hostels", status_code=201)
+def add_hostel(body: HostelIn, admin: CurrentUser, db: DB):
+    if not db.get(Campus, body.campus_id):
+        raise HTTPException(404, "Campus not found.")
+    if db.scalar(select(Hostel).where(Hostel.campus_id == body.campus_id, Hostel.name == body.name)):
+        raise HTTPException(409, "That hostel already exists.")
+    h = Hostel(campus_id=body.campus_id, name=body.name)
+    db.add(h)
+    audit(db, admin.id, "hostel.create", body.name)
+    db.commit()
+    return {"id": h.id, "name": h.name}
+
+
+@router.post("/hostels/{hid}/active")
+def hostel_active(hid: int, body: ShopActiveIn, admin: CurrentUser, db: DB):
+    h = db.get(Hostel, hid)
+    if not h:
+        raise HTTPException(404, "Hostel not found.")
+    h.active = body.active
+    audit(db, admin.id, "hostel.active", f"hostel:{hid}", {"active": body.active})
+    db.commit()
+    return {"id": h.id, "active": h.active}

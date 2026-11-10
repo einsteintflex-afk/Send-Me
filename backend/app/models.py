@@ -77,6 +77,17 @@ class Campus(Base, TimestampMixin):
     __table_args__ = (UniqueConstraint("university_id", "name"),)
 
 
+class Hostel(Base):
+    """Delivery hostels/blocks per campus. Names are stored exactly as supplied by the business."""
+    __tablename__ = "hostels"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campus_id: Mapped[int] = mapped_column(ForeignKey("campuses.id"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    __table_args__ = (UniqueConstraint("campus_id", "name"),)
+
+
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)

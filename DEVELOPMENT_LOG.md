@@ -11,3 +11,7 @@
 - Added: rate limiting on `/auth/*`, security headers, secure image upload (size and magic-byte checks), audit log.
 - Tests: 52 passing (auth, shopping, orders, payments, webhooks, unlisted requests, cancellation, rider flow, permissions, admin, catalog import).
 - Not done: all frontends, Postgres run, real Paystack run, push notifications, email delivery.
+
+## Session 3
+- Added hostel list (D block(College of health sciences student hostel), B- block, R-block, BQ, M-block, N- block) stored exactly as supplied. `GET /campuses/{id}/hostels`, admin add/hide, migration 0002, seeded.
+- Added `app/scripts/create_rider.py`. Sammy's account not created yet (needs email and password).
