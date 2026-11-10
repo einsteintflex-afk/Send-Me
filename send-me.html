@@ -1,0 +1,440 @@
+<title>Send Me</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: design brief on top, then a phone-sized prototype you can tap through, then interaction notes. */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --ink:#14231c; --muted:#5b6a62; --line:#dfe5df;
+  --green:#0b6b4f; --green-ink:#ffffff; --green-soft:#dff0e8;
+  --gold:#f2a900; --gold-soft:#fff0c9; --gold-ink:#3b2a00;
+  --alert:#b3261e; --alert-soft:#fde8e6;
+  --font-display:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;
+  --font-body:"DM Sans",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1612; --surface:#16231d; --ink:#eaf2ed; --muted:#9db0a5; --line:#264036;
+  --green:#3fc796; --green-ink:#06241a; --green-soft:#17382c;
+  --gold:#f5b92e; --gold-soft:#3a2f10; --gold-ink:#ffe7a8;
+  --alert:#ff8a80; --alert-soft:#3d1a18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1612; --surface:#16231d; --ink:#eaf2ed; --muted:#9db0a5; --line:#264036;
+  --green:#3fc796; --green-ink:#06241a; --green-soft:#17382c;
+  --gold:#f5b92e; --gold-soft:#3a2f10; --gold-ink:#ffe7a8;
+  --alert:#ff8a80; --alert-soft:#3d1a18; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:32px}
+.intro{display:grid;gap:12px;max-width:62ch}
+.intro h1{font-size:clamp(2rem,6vw,3rem);font-weight:800}
+.intro p{margin:0;color:var(--muted)}
+.notice{background:var(--gold-soft);color:var(--gold-ink);border-radius:12px;padding:12px 14px;font-size:14px}
+.palette{display:flex;flex-wrap:wrap;gap:10px}
+.sw{display:grid;gap:4px;font-size:12px;color:var(--muted);width:92px}
+.sw i{display:block;height:44px;border-radius:10px;border:1px solid var(--line)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:28px;align-items:start}
+@media(min-width:860px){.stage{grid-template-columns:400px minmax(0,1fr)}}
+.phone{width:100%;max-width:400px;height:760px;margin:0 auto;background:var(--surface);border:1px solid var(--line);
+  border-radius:32px;box-shadow:0 18px 50px rgba(10,30,20,.18);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.screen{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tabs button{background:none;border:0;padding:10px 4px 12px;display:grid;gap:2px;justify-items:center;font-size:12px;color:var(--muted);font-weight:600}
+.tabs button[aria-current="page"]{color:var(--green)}
+.tabs svg{width:22px;height:22px}
+.badge{background:var(--gold);color:var(--gold-ink);border-radius:99px;font-size:11px;padding:0 6px;font-weight:700;margin-left:4px}
+.topbar{display:flex;align-items:center;gap:10px}
+.topbar h2{font-size:20px;flex:1}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.btn{background:var(--green);color:var(--green-ink);border:0;border-radius:14px;padding:14px 16px;font-weight:700;width:100%}
+.btn.alt{background:var(--green-soft);color:var(--green)}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:var(--alert-soft);color:var(--alert)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.field{display:grid;gap:6px;font-weight:600;font-size:13px}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;font-weight:400;width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hero{background:var(--green);color:var(--green-ink);border-radius:20px;padding:16px;display:grid;gap:8px}
+.hero small{opacity:.85}
+.hero h2{font-size:22px}
+.search{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:0 12px}
+.search input{flex:1;border:0;background:none;padding:12px 0;min-width:0}
+.search input:focus-visible{outline:none}
+.search:focus-within{outline:3px solid var(--gold)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-weight:600;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--green);color:var(--green-ink);border-color:var(--green)}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cat{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 8px;display:grid;gap:6px;justify-items:center;font-size:12px;font-weight:600;text-align:center}
+.cat b{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-family:var(--font-display);font-size:15px}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.sec h3{font-size:17px}
+.link{background:none;border:0;color:var(--green);font-weight:700;padding:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;display:grid;text-align:left;padding:0}
+.ph{aspect-ratio:4/3;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:28px;position:relative}
+.ph small{position:absolute;bottom:6px;left:8px;font:600 10px var(--font-body);opacity:.7}
+.cb{padding:10px;display:grid;gap:4px}
+.cb strong{font-size:14px;line-height:1.25}
+.price{font-weight:700;font-variant-numeric:tabular-nums}
+.price.na{color:var(--muted);font-weight:600}
+.pill{display:inline-block;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;background:var(--green-soft);color:var(--green)}
+.pill.warn{background:var(--gold-soft);color:var(--gold-ink)}
+.list{display:grid;gap:10px}
+.item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
+.item .ph{aspect-ratio:1;border-radius:10px;font-size:18px}
+.item .ph small{display:none}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stepper button{width:34px;height:34px;border:0;background:var(--bg);font-weight:700;font-size:18px}
+.stepper span{min-width:32px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.box{border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:10px;background:var(--surface)}
+.box.gold{background:var(--gold-soft);color:var(--gold-ink);border-color:transparent}
+.sum{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.sum.total{font-weight:800;font-size:17px;border-top:1px dashed var(--line);padding-top:10px}
+.muted{color:var(--muted);font-size:13px}
+.radio{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px;font-weight:600}
+.radio:has(input:checked){border-color:var(--green);background:var(--green-soft)}
+.track{display:grid;gap:0}
+.step{display:grid;grid-template-columns:28px 1fr;gap:12px;padding-bottom:16px;position:relative}
+.step:not(:last-child)::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line)}
+.step.done:not(:last-child)::before{background:var(--green)}
+.dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:13px;font-weight:700}
+.step.done .dot{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.step.now .dot{border-color:var(--gold);background:var(--gold);color:var(--gold-ink)}
+.step.now strong{color:var(--green)}
+.step.cancelled .dot{background:var(--alert);border-color:var(--alert);color:#fff}
+.toast{position:absolute;left:16px;right:16px;bottom:84px;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-weight:600;font-size:13px}
+.welcome{justify-content:center;gap:18px}
+.brand{font-family:var(--font-display);font-weight:800;font-size:34px;color:var(--green)}
+.brand span{color:var(--gold)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:12px;padding:4px}
+.seg button{border:0;background:none;border-radius:9px;padding:9px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.side{display:grid;gap:20px;min-width:0}
+.side h2{font-size:22px}
+.notes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px;display:grid;gap:6px;align-content:start}
+.note h3{font-size:16px}
+.note p,.note li{margin:0;color:var(--muted);font-size:14px}
+.note ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.flow{display:flex;flex-wrap:wrap;gap:8px}
+.flow button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-weight:600;font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:24px 8px}
+@media(prefers-reduced-motion:no-preference){.screen{animation:in .18s ease-out}@keyframes in{from{opacity:.4;transform:translateY(6px)}}}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <h1>Send Me</h1>
+    <p>Campus essentials from the shop opposite R Block, delivered to your hostel or a campus drop-off point. The phone below is a working prototype. Tap through it from sign-in to order tracking.</p>
+    <div class="notice"><b>Prices are not filled in.</b> The product list you mentioned did not arrive, so every item shows "Price to come" and no total is calculated. Product names come from your brief. To load real prices, add them to the <code>PRICES</code> object near the end of the script (for example <code>"coke-1l": 12.5</code>) and cart, subtotal and total update by themselves. Shop phone numbers, delivery fee and rider details are placeholders for the same reason.</div>
+    <div class="palette" aria-label="Colour palette">
+      <div class="sw"><i style="background:#0b6b4f"></i>Campus green</div>
+      <div class="sw"><i style="background:#f2a900"></i>Kente gold</div>
+      <div class="sw"><i style="background:#14231c"></i>Lecture-hall ink</div>
+      <div class="sw"><i style="background:#f3f5f1"></i>Notebook paper</div>
+      <div class="sw"><i style="background:#dff0e8"></i>Mint tint</div>
+      <div class="sw"><i style="background:#b3261e"></i>Cancel red</div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="phone" id="phone" aria-label="Send Me app prototype">
+      <div class="screen" id="screen"></div>
+      <nav class="tabs" id="tabs" aria-label="Main"></nav>
+    </div>
+
+    <aside class="side">
+      <div>
+        <h2>Jump to a screen</h2>
+        <p class="muted">Sign-in is skipped when you jump. Add something to the cart first to see checkout filled in.</p>
+        <div class="flow" id="jump"></div>
+      </div>
+      <div class="notes">
+        <div class="note"><h3>Design concept</h3><p>A friendly shopfront for hostel life. Green for trust and campus, gold for the things you act on. Big tap targets, one-handed reach, and plain words like hostel, block and room number.</p></div>
+        <div class="note"><h3>Primary flow</h3><ul><li>Sign up with name, phone, email, hostel, room</li><li>Home, then shop or search</li><li>Product, then cart</li><li>Checkout and pay in app</li><li>Track: Pending to Delivered</li></ul></div>
+        <div class="note"><h3>Interactions</h3><ul><li>Search filters the catalog as you type</li><li>Category chips narrow the list, tap again to clear</li><li>Quantity stepper on cards, details and cart</li><li>Minus at 1 removes the item</li><li>"Can't find it?" is on home, shop, empty search, cart</li><li>Cart tab shows a live item count</li></ul></div>
+        <div class="note"><h3>Layout and labels</h3><ul><li>Two-column product grid, 16px gutters</li><li>Bottom tabs: Home, Shop, Cart, Orders</li><li>Statuses used exactly: Pending, Accepted, Shopping, On the Way, Delivered, Cancelled</li><li>Availability reads "Listed as available". No stock counts shown.</li><li>Cancel is offered only while Pending</li></ul></div>
+        <div class="note"><h3>Open items</h3><ul><li>Product prices and any quantities</li><li>UGMSA Mini Mart phone numbers</li><li>Delivery fee rule</li><li>Rider name and contact (screen is ready for them)</li><li>Real product photos</li></ul></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* ---------- Data. Names from the brief. Prices intentionally empty. ---------- */
+const PRICES = {}; // id -> GHS number, e.g. {"coke-1l": 12.5}
+const DELIVERY_FEE = null; // number in GHS once decided
+const SHOP = {name:"UGMSA Mini Mart", where:"Opposite R Block", phones:null};
+const CATS = [
+  {id:"drinks",n:"Drinks",c:["#d7ecfb","#0d3a5c"]},
+  {id:"snacks",n:"Snacks",c:["#ffe6c7","#5c3300"]},
+  {id:"staples",n:"Breakfast & Staples",c:["#fff3b8","#4d3d00"]},
+  {id:"meals",n:"Quick Meals & Canned",c:["#fbd9d3","#5c1a10"]},
+  {id:"care",n:"Personal Care",c:["#e6dcf8","#3a2063"]},
+  {id:"home",n:"Household & Stationery",c:["#d9f0e0","#12452a"]},
+  {id:"apparel",n:"Apparel",c:["#f8dcec","#5e1840"]}
+];
+const P = [
+ ["coke-s","Coca-Cola (small)","drinks"],["coke-m","Coca-Cola (medium)","drinks"],["coke-1l","Coca-Cola (1 litre)","drinks"],
+ ["bel","Bel Malt Original","drinks"],["bavaria","Bavaria Malt","drinks"],["bullet","Bullet Energy","drinks"],["water","Water","drinks"],["fruit","Fruit drink","drinks"],
+ ["popcorn","Act 2 Popcorn","snacks"],["allbutter","All Butter Biscuit","snacks"],["bourbon","Bourbon Biscuit","snacks"],["fanice","Fanice","snacks"],["plantain","Plantain chips","snacks"],
+ ["milo","Milo","staples"],["cornflakes","Cornflakes","staples"],["milk","Milk","staples"],["margarine","Margarine","staples"],["sugar","Brown sugar","staples"],["rice","Rice","staples"],["eggs","Eggs","staples"],
+ ["indomie","Indomie","meals"],["mackerel","Mackerel","meals"],["sardines","Sardines","meals"],["bread","Bread","meals"],
+ ["toothbrush","Toothbrush","care"],["toothpaste","Toothpaste","care"],["soap","Soap","care"],["deo","Deodorant","care"],["bathgel","Bath gel","care"],["pads","Sanitary pads","care"],
+ ["tissue","Tissue","home"],["toilet","Toilet rolls","home"],["airwick","Air Wick","home"],["pens","Pens","home"],["envelopes","Envelopes","home"],
+ ["slippers","Bathroom slippers","apparel"],["socks","Student socks","apparel"]
+].map(([id,name,cat])=>({id,name,cat}));
+const POPULAR = ["coke-1l","milo","indomie","bread"];
+const STATUSES = ["Pending","Accepted","Shopping","On the Way","Delivered"];
+const STATUS_NOTE = {
+  "Pending":"Waiting for UGMSA Mini Mart to accept your order.",
+  "Accepted":"The shop has accepted your order.",
+  "Shopping":"Your items are being picked and packed.",
+  "On the Way":"Your rider is heading to your drop-off.",
+  "Delivered":"Your order has arrived. Enjoy.",
+  "Cancelled":"This order was cancelled."};
+
+/* ---------- State ---------- */
+const S = {screen:"welcome",tab:"home",user:null,mode:"register",q:"",cat:null,prod:null,qty:1,
+  cart:{},reqs:[],pay:"momo",dest:"hostel",drop:"",order:null,toast:""};
+const $ = s=>document.querySelector(s);
+const esc = t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cat = id=>CATS.find(c=>c.id===id);
+const prod = id=>P.find(p=>p.id===id);
+const money = n=>"GH₵ "+n.toFixed(2);
+const priceOf = id=>PRICES[id];
+function priceHTML(id){return priceOf(id)!=null?`<span class="price">${money(priceOf(id))}</span>`:`<span class="price na">Price to come</span>`}
+function count(){return Object.values(S.cart).reduce((a,b)=>a+b,0)+S.reqs.length}
+function totals(){
+  const ids=Object.keys(S.cart);
+  const known=ids.every(i=>priceOf(i)!=null);
+  const sub=known?ids.reduce((a,i)=>a+priceOf(i)*S.cart[i],0):null;
+  const fee=DELIVERY_FEE;
+  return {sub,fee,total:(sub!=null&&fee!=null)?sub+fee:null,hasItems:ids.length>0};
+}
+function m(n,fallback){return n==null?`<span class="muted">${fallback}</span>`:money(n)}
+function tile(p,small){const c=cat(p.cat).c;
+  const ini=p.name.replace(/[^A-Za-z0-9 ]/g,"").split(" ").slice(0,2).map(w=>w[0]).join("");
+  return `<div class="ph" style="background:${c[0]};color:${c[1]}">${ini}${small?"":"<small>Photo to come</small>"}</div>`}
+const ico={
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v10H3z"/></svg>',
+ shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1-5h14l1 5M4 9v11h16V9M4 9h16"/></svg>',
+ cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h11l2-8H6"/></svg>',
+ orders:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+ back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+ search:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'};
+
+/* ---------- Actions ---------- */
+function go(screen,tab){S.screen=screen;if(tab)S.tab=tab;render();$("#screen").scrollTop=0}
+function add(id,n=1){S.cart[id]=(S.cart[id]||0)+n;if(S.cart[id]<=0)delete S.cart[id];flash("Added to cart");render(true)}
+function setQty(id,d){S.cart[id]=(S.cart[id]||0)+d;if(S.cart[id]<=0)delete S.cart[id];render(true)}
+let tt;function flash(t){S.toast=t;clearTimeout(tt);tt=setTimeout(()=>{S.toast="";const e=$(".toast");if(e)e.remove()},1800)}
+function openProd(id){S.prod=id;S.qty=1;go("product")}
+
+/* ---------- Views ---------- */
+function vWelcome(){
+  const reg=S.mode==="register";
+  return `<div class="screen-inner welcome" style="display:grid;gap:18px;margin:auto 0">
+    <div><div class="brand">Send<span>Me</span></div><p class="muted" style="margin:6px 0 0">Everyday items from the shop near campus, brought to your hostel.</p></div>
+    <div class="seg" role="group" aria-label="Account"><button aria-pressed="${reg}" data-a="mode" data-v="register">Register</button><button aria-pressed="${!reg}" data-a="mode" data-v="signin">Sign in</button></div>
+    <form id="authForm" style="display:grid;gap:12px">
+      ${reg?`<label class="field">Full name<input id="f-name" required autocomplete="name" placeholder="Ama Mensah"></label>`:""}
+      <label class="field">Phone number<input id="f-phone" required inputmode="tel" autocomplete="tel" placeholder="Phone number"></label>
+      ${reg?`<label class="field">Email<input id="f-email" type="email" required autocomplete="email" placeholder="you@st.ug.edu.gh"></label>
+      <div class="row2"><label class="field">Hostel<input id="f-hostel" required placeholder="Hostel name"></label>
+      <label class="field">Room number<input id="f-room" required placeholder="e.g. B12"></label></div>`:""}
+      <button class="btn" type="submit">${reg?"Create account":"Sign in"}</button>
+    </form>
+    <p class="muted" style="text-align:center;margin:0">Orders are delivered inside campus only.</p>
+  </div>`}
+
+function vHome(){
+  const u=S.user||{hostel:"Your hostel",room:"room"};
+  return `
+  <div class="hero"><small>Delivering to</small><h2>${esc(u.hostel)}${u.room?", Room "+esc(u.room):""}</h2><small>Est. 25–35 min from ${SHOP.name} (sample estimate)</small></div>
+  <div class="search">${ico.search}<input id="homeSearch" placeholder="Search drinks, noodles, soap…" aria-label="Search products"></div>
+  <div><div class="sec"><h3>Categories</h3></div></div>
+  <div class="cats">${CATS.map(c=>`<button class="cat" data-a="cat" data-v="${c.id}"><b style="background:${c.c[0]};color:${c.c[1]}">${c.n[0]}</b>${c.n}</button>`).join("")}</div>
+  <div class="sec"><h3>Popular with students</h3><button class="link" data-a="tab" data-v="shop">See all</button></div>
+  <div class="grid">${POPULAR.map(id=>card(prod(id))).join("")}</div>
+  <button class="box gold" data-a="request" style="text-align:left;border:0;cursor:pointer"><strong>Can't find something?</strong><span style="font-size:14px">Type what you want and we will ask the shop.</span></button>
+  <div class="sec"><h3>Nearby shops</h3></div>
+  <button class="box" data-a="tab" data-v="shop" style="text-align:left;cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>${SHOP.name}</strong><span class="pill">Open to orders</span></div><span class="muted">${SHOP.where} · Est. 25–35 min (sample)</span></button>`}
+
+function card(p){
+  const q=S.cart[p.id]||0;
+  return `<div class="card"><button data-a="prod" data-v="${p.id}" style="all:unset;cursor:pointer;display:grid" aria-label="${esc(p.name)} details">${tile(p)}<span class="cb"><strong>${esc(p.name)}</strong>${priceHTML(p.id)}<span class="pill" style="justify-self:start">Listed as available</span></span></button>
+  <div style="padding:0 10px 10px">${q?`<div class="stepper" style="width:100%;justify-content:space-between"><button data-a="dec" data-v="${p.id}" aria-label="Remove one">−</button><span>${q}</span><button data-a="inc" data-v="${p.id}" aria-label="Add one">+</button></div>`:`<button class="btn alt" style="padding:9px" data-a="add" data-v="${p.id}">Add</button>`}</div></div>`}
+
+function filtered(){
+  const q=S.q.trim().toLowerCase();
+  return P.filter(p=>(!S.cat||p.cat===S.cat)&&(!q||p.name.toLowerCase().includes(q)||cat(p.cat).n.toLowerCase().includes(q)))}
+
+function vShop(){
+  const list=filtered();
+  return `
+  <div class="box"><div style="display:flex;justify-content:space-between;gap:8px"><h2 style="font-size:20px">${SHOP.name}</h2><span class="pill">Open to orders</span></div>
+   <span class="muted">${SHOP.where}</span>
+   <span class="muted">Shop phone: ${SHOP.phones?esc(SHOP.phones):"numbers to be added"}</span></div>
+  <div class="search">${ico.search}<input id="shopSearch" value="${esc(S.q)}" placeholder="Search ${SHOP.name}" aria-label="Search products"></div>
+  <div class="chips" role="group" aria-label="Categories"><button class="chip" aria-pressed="${!S.cat}" data-a="cat" data-v="">All</button>${CATS.map(c=>`<button class="chip" aria-pressed="${S.cat===c.id}" data-a="cat" data-v="${c.id}">${c.n}</button>`).join("")}</div>
+  <div id="results">${results(list)}</div>`}
+function results(list){
+  if(!list.length)return `<div class="empty"><strong>No match for "${esc(S.q)}"</strong><p>Check the spelling, or ask the shop for it.</p><button class="btn" data-a="request">Request this item</button></div>`;
+  return `<p class="muted" style="margin:0 0 10px">${list.length} item${list.length>1?"s":""}</p><div class="grid">${list.map(card).join("")}</div>
+  <button class="box gold" data-a="request" style="text-align:left;border:0;cursor:pointer;margin-top:14px;width:100%"><strong>Can't find it?</strong><span style="font-size:14px">Request an item that is not listed.</span></button>`}
+
+function vProduct(){
+  const p=prod(S.prod);
+  return `<div class="topbar"><button class="icon-btn" data-a="back" aria-label="Back">${ico.back}</button><h2>${cat(p.cat).n}</h2></div>
+  ${tile(p)}
+  <div style="display:grid;gap:6px"><h2 style="font-size:24px">${esc(p.name)}</h2><div style="font-size:20px">${priceHTML(p.id)}</div>
+  <span class="pill warn" style="justify-self:start">Listed as available · ask shop to confirm</span>
+  <span class="muted">Sold by ${SHOP.name}, ${SHOP.where}</span></div>
+  <div style="display:flex;align-items:center;justify-content:space-between"><strong>Quantity</strong>
+   <div class="stepper"><button data-a="pdec" aria-label="Fewer">−</button><span>${S.qty}</span><button data-a="pinc" aria-label="More">+</button></div></div>
+  <button class="btn" data-a="padd">Add ${S.qty} to cart</button>`}
+
+function vRequest(){
+  return `<div class="topbar"><button class="icon-btn" data-a="back" aria-label="Back">${ico.back}</button><h2>Request an item</h2></div>
+  <p class="muted" style="margin:0">Not in the catalog? Tell us what you want. The shop will confirm if it has it and the price before you pay.</p>
+  <form id="reqForm" style="display:grid;gap:12px">
+   <label class="field">What do you need?<textarea id="reqText" rows="4" required placeholder="Name, brand or size. For example: a plain A4 notebook"></textarea></label>
+   <button class="btn" type="submit">Add request to cart</button></form>`}
+
+function vCart(){
+  const ids=Object.keys(S.cart),t=totals();
+  if(!count())return `<div class="topbar"><h2>Your cart</h2></div><div class="empty"><p>Your cart is empty.</p><button class="btn" data-a="tab" data-v="shop">Browse the shop</button></div>`;
+  return `<div class="topbar"><h2>Your cart</h2></div>
+  <div class="list">${ids.map(id=>{const p=prod(id);return `<div class="item">${tile(p,1)}<div style="min-width:0"><strong style="font-size:14px">${esc(p.name)}</strong><div>${priceHTML(id)}</div></div>
+   <div class="stepper"><button data-a="dec" data-v="${id}" aria-label="Remove one">−</button><span>${S.cart[id]}</span><button data-a="inc" data-v="${id}" aria-label="Add one">+</button></div></div>`}).join("")}</div>
+  ${S.reqs.length?`<div class="sec"><h3>Requested items</h3></div><div class="list">${S.reqs.map((r,i)=>`<div class="box gold" style="grid-template-columns:1fr auto;align-items:center"><div><strong>${esc(r)}</strong><div style="font-size:13px">Shop will confirm availability and price</div></div><button class="link" data-a="delreq" data-v="${i}" style="color:inherit">Remove</button></div>`).join("")}</div>`:""}
+  <button class="btn ghost" data-a="request">+ Request an unlisted item</button>
+  <div class="box">
+   <div class="sum"><span>Subtotal</span><span>${m(t.sub,"Pending prices")}</span></div>
+   <div class="sum"><span>Delivery fee</span><span>${m(t.fee,"To be set")}</span></div>
+   <div class="sum total"><span>Total</span><span>${m(t.total,"Pending")}</span></div></div>
+  <button class="btn" data-a="checkout">Go to checkout</button>`}
+
+function vCheckout(){
+  const u=S.user||{hostel:"",room:""},t=totals();
+  return `<div class="topbar"><button class="icon-btn" data-a="back" aria-label="Back">${ico.back}</button><h2>Checkout</h2></div>
+  <div class="sec"><h3>Deliver to</h3></div>
+  <label class="radio"><input type="radio" name="dest" value="hostel" ${S.dest==="hostel"?"checked":""}> <span>Hostel and room<br><span class="muted" style="font-weight:400">${esc(u.hostel||"Your hostel")}, Room ${esc(u.room||"—")}</span></span></label>
+  <label class="radio"><input type="radio" name="dest" value="drop" ${S.dest==="drop"?"checked":""}> <span>Campus drop-off point<br><span class="muted" style="font-weight:400">Meet the rider at a place you name</span></span></label>
+  ${S.dest==="drop"?`<label class="field">Drop-off point<input id="dropText" value="${esc(S.drop)}" placeholder="Block, gate or landmark"></label>`:""}
+  <div class="sec"><h3>Order summary</h3></div>
+  <div class="box">
+   ${Object.keys(S.cart).map(id=>`<div class="sum"><span>${S.cart[id]} × ${esc(prod(id).name)}</span><span>${priceOf(id)!=null?money(priceOf(id)*S.cart[id]):'<span class="muted">Price to come</span>'}</span></div>`).join("")}
+   ${S.reqs.map(r=>`<div class="sum"><span>Request: ${esc(r)}</span><span class="muted">To confirm</span></div>`).join("")}
+   <div class="sum" style="border-top:1px dashed var(--line);padding-top:10px"><span>Subtotal</span><span>${m(t.sub,"Pending prices")}</span></div>
+   <div class="sum"><span>Delivery fee</span><span>${m(t.fee,"To be set")}</span></div>
+   <div class="sum total"><span>Total</span><span>${m(t.total,"Pending")}</span></div></div>
+  <div class="sec"><h3>Pay in app</h3></div>
+  <label class="radio"><input type="radio" name="pay" value="momo" ${S.pay==="momo"?"checked":""}> Mobile money</label>
+  <label class="radio"><input type="radio" name="pay" value="card" ${S.pay==="card"?"checked":""}> Bank card</label>
+  <p class="muted" style="margin:0">Prototype only. No payment is taken.</p>
+  <button class="btn" data-a="place">Pay and place order</button>`}
+
+function vOrders(){
+  const o=S.order;
+  if(!o)return `<div class="topbar"><h2>Orders</h2></div><div class="empty"><p>No orders yet. Your active order appears here.</p><button class="btn" data-a="tab" data-v="shop">Start shopping</button></div>`;
+  return vTrack()}
+
+function vTrack(){
+  const o=S.order,cancelled=o.status==="Cancelled",idx=STATUSES.indexOf(o.status);
+  const steps=cancelled?[...STATUSES.slice(0,1),"Cancelled"]:STATUSES;
+  return `<div class="topbar"><h2>Order ${o.id}</h2><span class="pill ${cancelled?"warn":""}">${o.status}</span></div>
+  <div class="box gold" ${cancelled?'style="background:var(--alert-soft);color:var(--alert)"':""}><strong>${STATUS_NOTE[o.status]}</strong>
+   ${cancelled||o.status==="Delivered"?"":`<span>Estimated arrival: 25–35 min after the shop accepts (sample estimate)</span>`}</div>
+  <div class="track">${steps.map((s,i)=>{const done=!cancelled&&i<idx,now=!cancelled&&i===idx;const cls=s==="Cancelled"?"cancelled":done?"done":now?"now":"";
+    return `<div class="step ${cls}"><div class="dot">${s==="Cancelled"?"×":done?"✓":i+1}</div><div><strong>${s}</strong><div class="muted">${i<=idx||s==="Cancelled"?STATUS_NOTE[s]:""}</div></div></div>`}).join("")}</div>
+  <div class="box"><strong>Delivering to</strong><span>${esc(o.dest)}</span></div>
+  <div class="box"><strong>Delivery contact</strong>
+   <span class="muted">Rider: ${o.status==="On the Way"||o.status==="Delivered"?"name and phone will appear here once assigned":"assigned after the shop accepts"}</span>
+   <span class="muted">${SHOP.name} · ${SHOP.where} · ${SHOP.phones?esc(SHOP.phones):"phone numbers to be added"}</span></div>
+  <div class="box"><strong>Items (${o.items})</strong><span class="muted">${esc(o.summary)}</span></div>
+  ${cancelled||o.status==="Delivered"?`<button class="btn" data-a="tab" data-v="shop">Shop again</button>`:`
+   <button class="btn alt" data-a="advance">Demo: move to next status</button>
+   ${o.status==="Pending"?`<button class="btn danger" data-a="cancel">Cancel order</button>`:""}`}`}
+
+/* ---------- Render ---------- */
+function render(keepScroll){
+  const sc=$("#screen"),top=sc.scrollTop,focus=document.activeElement&&document.activeElement.id,pos=document.activeElement&&document.activeElement.selectionStart;
+  const v={welcome:vWelcome,home:vHome,shop:vShop,product:vProduct,request:vRequest,cart:vCart,checkout:vCheckout,orders:vOrders,track:vTrack}[S.screen];
+  sc.innerHTML=v()+(S.toast?`<div class="toast" role="status">${S.toast}</div>`:"");
+  if(keepScroll)sc.scrollTop=top;
+  const tabs=$("#tabs");
+  tabs.hidden=S.screen==="welcome";
+  const n=count();
+  tabs.innerHTML=[["home","Home"],["shop","Shop"],["cart","Cart"],["orders","Orders"]].map(([k,l])=>
+    `<button data-a="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}>${ico[k]}<span>${l}${k==="cart"&&n?`<span class="badge">${n}</span>`:""}</span></button>`).join("");
+  if(focus){const e=document.getElementById(focus);if(e&&e.focus){e.focus();try{e.setSelectionRange(pos,pos)}catch(_){}}}
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const a=b.dataset.a,v=b.dataset.v;
+  if(a==="mode"){S.mode=v;render()}
+  else if(a==="tab"){S.q="";S.cat=null;go(v==="orders"?"orders":v,v)}
+  else if(a==="cat"){S.cat=v||null;S.q="";S.tab="shop";go("shop","shop")}
+  else if(a==="prod")openProd(v);
+  else if(a==="add")add(v);
+  else if(a==="inc")setQty(v,1);
+  else if(a==="dec")setQty(v,-1);
+  else if(a==="pinc"){S.qty++;render(true)}
+  else if(a==="pdec"){S.qty=Math.max(1,S.qty-1);render(true)}
+  else if(a==="padd"){S.cart[S.prod]=(S.cart[S.prod]||0)+S.qty;flash("Added to cart");go("cart","cart")}
+  else if(a==="back")go(S.tab==="cart"&&S.screen==="checkout"?"cart":S.tab==="orders"?"orders":S.tab==="home"?"home":S.screen==="product"||S.screen==="request"?(S.tab==="cart"?"cart":S.tab):"shop");
+  else if(a==="request")go("request");
+  else if(a==="delreq"){S.reqs.splice(+v,1);render(true)}
+  else if(a==="checkout"){S.tab="cart";go("checkout","cart")}
+  else if(a==="place"){
+    if(S.dest==="drop"&&!S.drop.trim()){flash("Enter a drop-off point");render(true);return}
+    const u=S.user||{hostel:"Your hostel",room:""};
+    const names=Object.keys(S.cart).map(i=>S.cart[i]+" × "+prod(i).name).concat(S.reqs.map(r=>"Request: "+r));
+    S.order={id:"#SM-"+(1000+Math.floor(Math.random()*9000)),status:"Pending",items:count(),summary:names.join(", "),
+      dest:S.dest==="hostel"?`${u.hostel}, Room ${u.room||"—"}`:"Campus drop-off: "+S.drop};
+    S.cart={};S.reqs=[];S.tab="orders";go("track","orders")}
+  else if(a==="advance"){const i=STATUSES.indexOf(S.order.status);if(i<STATUSES.length-1)S.order.status=STATUSES[i+1];render()}
+  else if(a==="cancel"){S.order.status="Cancelled";render()}
+  else if(a==="jump")jump(v);
+});
+document.addEventListener("submit",e=>{
+  e.preventDefault();
+  if(e.target.id==="authForm"){
+    const g=i=>(document.getElementById(i)||{}).value||"";
+    S.user=S.mode==="register"?{name:g("f-name"),phone:g("f-phone"),email:g("f-email"),hostel:g("f-hostel"),room:g("f-room")}:(S.user||{hostel:"Your hostel",room:"",phone:g("f-phone")});
+    go("home","home")}
+  if(e.target.id==="reqForm"){
+    const t=document.getElementById("reqText").value.trim();if(!t)return;
+    S.reqs.push(t);flash("Request added");go("cart","cart")}
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="shopSearch"){S.q=e.target.value;$("#results").innerHTML=results(filtered())}
+  if(e.target.id==="homeSearch"){S.q=e.target.value;S.cat=null;S.tab="shop";go("shop","shop");const s=$("#shopSearch");s.focus();s.setSelectionRange(S.q.length,S.q.length)}
+  if(e.target.id==="dropText")S.drop=e.target.value;
+});
+document.addEventListener("change",e=>{
+  if(e.target.name==="dest"){S.dest=e.target.value;render(true)}
+  if(e.target.name==="pay")S.pay=e.target.value;
+});
+
+/* ---------- Jump links ---------- */
+const JUMPS=[["welcome","Sign in"],["home","Home"],["shop","Shop"],["product","Product"],["request","Request item"],["cart","Cart"],["checkout","Checkout"],["track","Tracking"]];
+$("#jump").innerHTML=JUMPS.map(([k,l])=>`<button data-a="jump" data-v="${k}">${l}</button>`).join("");
+function jump(k){
+  if(!S.user&&k!=="welcome")S.user={name:"Sample student",phone:"",email:"",hostel:"Your hostel",room:"B12"};
+  if(k==="cart"||k==="checkout"){if(!count()){S.cart={"coke-1l":1,"indomie":2,"bread":1};S.reqs=S.reqs.length?S.reqs:["A plain A4 notebook"]}}
+  if(k==="track"&&!S.order){S.order={id:"#SM-1042",status:"Shopping",items:3,summary:"1 × Coca-Cola (1 litre), 2 × Indomie, 1 × Bread",dest:"Your hostel, Room B12"}}
+  if(k==="product")S.prod=S.prod||"milo";
+  S.tab={welcome:"home",home:"home",shop:"shop",product:"shop",request:"home",cart:"cart",checkout:"cart",track:"orders"}[k];
+  go(k,S.tab);
+}
+render();
+</script>
