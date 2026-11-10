@@ -1,0 +1,13 @@
+# Development Log
+
+## Session 1
+- Delivered a static HTML design prototype (`send-me.html`). No backend.
+
+## Session 2
+- Inspected repo: only README, LICENSE and the prototype. Product list and shop phone numbers were not in the repo.
+- Chose FastAPI + SQLAlchemy 2 + Alembic. Tests run on SQLite, production targets PostgreSQL.
+- Built: config, security (Argon2, JWT access/refresh), 5 roles, full relational schema (35 tables incl. multi-shop, snapshots, audit log), migration `0001`.
+- Built routers: auth (register, login, refresh, verify email, password reset, saved addresses), catalog and search (synonyms, suggestions, popular), cart and unlisted requests, checkout and orders, payments (Paystack), notifications, shop dashboard API, rider API, super-admin API, complaints.
+- Added: rate limiting on `/auth/*`, security headers, secure image upload (size and magic-byte checks), audit log.
+- Tests: 52 passing (auth, shopping, orders, payments, webhooks, unlisted requests, cancellation, rider flow, permissions, admin, catalog import).
+- Not done: all frontends, Postgres run, real Paystack run, push notifications, email delivery.
