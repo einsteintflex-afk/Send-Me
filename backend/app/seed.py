@@ -10,12 +10,13 @@ from .security import hash_password
 HOSTELS = [
     "D block(College of health sciences student hostel)", "B- block", "R-block", "BQ", "M-block", "N- block",
 ]
+SHOP_PHONES = ["+233576966929", "+233546504543"]
 CATEGORIES = [
     ("drinks", "Drinks & Beverages"), ("snacks", "Snacks & Confectionery"), ("breakfast", "Breakfast & Cereals"),
     ("noodles", "Noodles & Quick Meals"), ("bread", "Bread & Bakery"), ("dairy", "Milk, Dairy & Eggs"),
     ("canned", "Canned Foods"), ("groceries", "Groceries & Staples"), ("personal-care", "Personal Care"),
     ("toiletries", "Toiletries"), ("household", "Household Products"), ("stationery", "Stationery"),
-    ("apparel", "Clothing & Apparel"),
+    ("apparel", "Clothing & Apparel"), ("frozen-chilled", "Frozen & Chilled"),
 ]
 
 
@@ -37,9 +38,13 @@ def seed(db, university_name: str | None = None):
     for i, hname in enumerate(HOSTELS):
         if not db.scalar(select(Hostel).where(Hostel.campus_id == campus.id, Hostel.name == hname)):
             db.add(Hostel(campus_id=campus.id, name=hname, sort_order=i))
-    if not db.scalar(select(Shop).where(Shop.slug == "ugmsa-mini-mart")):
-        db.add(Shop(campus_id=campus.id, name="UGMSA Mini Mart", slug="ugmsa-mini-mart", location="Opposite R Block",
-                    phones=[]))  # phone numbers must be entered by the shop or admin
+    shop = db.scalar(select(Shop).where(Shop.slug == "ugmsa-mini-mart"))
+    if not shop:
+        shop = Shop(campus_id=campus.id, name="UGMSA Mini Mart", slug="ugmsa-mini-mart", location="Opposite R Block",
+                    phones=[])
+        db.add(shop)
+    if not shop.phones:  # supplied by the business (0576966929, 0546504543)
+        shop.phones = SHOP_PHONES
     email, pw = os.getenv("SEED_ADMIN_EMAIL"), os.getenv("SEED_ADMIN_PASSWORD")
     if email and pw and not db.scalar(select(User).where(User.email == email.lower())):
         db.add(User(email=email.lower(), phone=os.getenv("SEED_ADMIN_PHONE", "+233000000000"), full_name="Super Admin",

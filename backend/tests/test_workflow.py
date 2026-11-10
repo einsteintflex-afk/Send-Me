@@ -230,3 +230,21 @@ def test_catalog_import(tmp_path):
 def test_health_and_security_headers(client):
     r = client.get("/health")
     assert r.json()["ok"] and r.headers["x-content-type-options"] == "nosniff"
+
+
+def test_real_catalog_imports_cleanly_and_exactly():
+    import os
+    from sqlalchemy import select as sel
+    from app.db import SessionLocal
+    from app.models import Product, Shop
+    from app.scripts.import_catalog import run
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "ugmsa_catalog.csv")
+    with SessionLocal() as db:
+        res = run(db, path, "ugmsa-mini-mart")
+        assert res["errors"] == [] and res["committed"] and res["created_products"] == 86  # 2 of the 88 already exist in the test fixture and are updated
+        by = {p.name: p for p in db.scalars(sel(Product))}
+        assert float(by["Coca-cola(1 litre)"].price) == 19.0 and by["Coca-cola(1 litre)"].stock_qty is None
+        assert float(by["Basmati Rice"].price) == 480.0 and by["Bic Pen"].stock_qty == 325
+        assert by["Malta Guinness"].availability.value == "unavailable"
+        assert "Mom’s margic sardine" in by and "Indomie (Hungry man size)" in by
+        assert db.scalar(sel(Shop)).phones == ["+233576966929", "+233546504543"]

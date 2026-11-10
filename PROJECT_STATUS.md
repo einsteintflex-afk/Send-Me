@@ -11,7 +11,7 @@ Last updated: session 2. Read this first, then `TODO.md`.
 | Student web app | **Not started.** Only the static design prototype `send-me.html` exists. It is not connected to the backend. |
 | Shop, rider and admin web apps | **Not started.** The backend APIs for all three exist and are tested. |
 | Push notifications | In-app notifications work. Push provider not wired. |
-| Product catalogue | **Empty.** Product list was never supplied. Importer is ready: `backend/app/scripts/import_catalog.py`. |
+| Product catalogue | 88 products ready to import from `backend/data/ugmsa_catalog.csv`. Items to confirm in `CATALOG_REVIEW.md`. |
 
 ## Definition-of-done journey, backend only
 Register, login, saved destinations, browse, search, cart, unlisted request, checkout, payment, shop accept and prepare, rider assignment, rider delivery, order history and notifications are all covered by `tests/test_workflow.py` using a fake payment provider. A real provider transaction (step 10) has not been done.

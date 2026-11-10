@@ -15,3 +15,6 @@
 ## Session 3
 - Added hostel list (D block(College of health sciences student hostel), B- block, R-block, BQ, M-block, N- block) stored exactly as supplied. `GET /campuses/{id}/hostels`, admin add/hide, migration 0002, seeded.
 - Added `app/scripts/create_rider.py`. Sammy's account not created yet (needs email and password).
+
+## Session 4
+- Received product table and shop phones. Built `ugmsa_catalog.csv` (88 products, exact names/prices, untracked stock left blank). Seed now sets shop phones and a Frozen & Chilled category. Added import test. `CATALOG_REVIEW.md` lists items to confirm.

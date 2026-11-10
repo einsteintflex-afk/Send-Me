@@ -1,7 +1,7 @@
 # TODO
 
 ## Needs input from you (blocking real use)
-- [ ] Product list with exact names and prices (CSV or pasted). Import with `python -m app.scripts.import_catalog`.
+- [x] Product list received and converted (`backend/data/ugmsa_catalog.csv`). Review items in `CATALOG_REVIEW.md`. Run: `python -m app.scripts.import_catalog data/ugmsa_catalog.csv`.
 - [ ] UGMSA Mini Mart phone numbers.
 - [ ] University name (seed uses a placeholder "University (set in admin)").
 - [ ] Paystack account and test secret key (`PAYSTACK_SECRET_KEY`).
@@ -9,7 +9,7 @@
 - [ ] Shop opening hours and typical delivery time.
 - [ ] Sammy (rider), phone 0264944652: needs an email and a password to create the login. Run `python -m app.scripts.create_rider --name Sammy --phone 0264944652 --email ... --password ...` or use `POST /admin/riders`.
 - [x] Confirmed: 0264944652 is Sammy's (rider) number, not the shop's.
-- [ ] UGMSA Mini Mart phone numbers are still missing.
+- [x] UGMSA Mini Mart phones received: 0576966929, 0546504543 (seeded).
 
 ## Next engineering tasks, in order
 1. [ ] Run migrations and test suite against real PostgreSQL (`docker compose up db`).
