@@ -8,7 +8,8 @@
 - [ ] Delivery fee amount (set in admin).
 - [ ] Shop opening hours and typical delivery time.
 - [ ] Sammy (rider), phone 0264944652: needs an email and a password to create the login. Run `python -m app.scripts.create_rider --name Sammy --phone 0264944652 --email ... --password ...` or use `POST /admin/riders`.
-- [ ] Confirm whether 0264944652 is Sammy's number or the shop's. Shop phone numbers are still missing.
+- [x] Confirmed: 0264944652 is Sammy's (rider) number, not the shop's.
+- [ ] UGMSA Mini Mart phone numbers are still missing.
 
 ## Next engineering tasks, in order
 1. [ ] Run migrations and test suite against real PostgreSQL (`docker compose up db`).
