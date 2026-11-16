@@ -8,7 +8,9 @@ from ..config import get_settings
 from ..deps import DB, CurrentUser, Student
 from ..models import (Availability, Cart, CartItem, Product, ProductRequest, ProductVariant, RequestStatus, Shop)
 from ..serializers import f
-from ..services.pricing import delivery_fee
+from ..services.pricing import distance_settings, flat_fee, quote_delivery
+from ..services.notify import notify_admins, notify_shop
+from ..models import Address
 from ..services.util import money
 
 router = APIRouter(prefix="/cart", tags=["cart"], dependencies=[Student])
@@ -50,7 +52,7 @@ def get_cart(db, user) -> Cart:
     return cart
 
 
-def cart_view(db, user) -> dict:
+def cart_view(db, user, address_id: int | None = None) -> dict:
     cart = get_cart(db, user)
     lines, subtotal, shop_ids, warnings = [], 0, set(), []
     for ci in cart.items:
@@ -80,23 +82,31 @@ def cart_view(db, user) -> dict:
                         "message": ("Price confirmed by the shop." if priced else
                                     "Rejected by the shop. Remove it to continue." if r.status == RequestStatus.rejected
                                     else "Price and availability need shop confirmation.")})
-    fee, shop = None, None
+    fee, shop, quote, needs_dest = None, None, None, False
     if len(shop_ids) == 1:
         shop = db.get(Shop, next(iter(shop_ids)))
-        fee = delivery_fee(db, shop)
+        addr = db.get(Address, address_id) if address_id else None
+        if addr and addr.user_id != user.id:
+            addr = None
+        quote = quote_delivery(db, shop, addr)
+        fee = quote["fee"] if quote else None
+        needs_dest = bool(distance_settings(db)) and (addr is None) and fee is None
     elif len(shop_ids) > 1:
         warnings.append("Your cart has items from different shops. Order from one shop at a time.")
     total = (subtotal + fee) if fee is not None else None
     return {"shop_id": shop.id if shop else None, "shop_name": shop.name if shop else None, "items": lines,
             "requests": req_out, "subtotal": f(subtotal), "delivery_fee": f(fee), "discount": 0.0,
             "total": f(total), "currency": "GHS", "warnings": warnings,
-            "fee_configured": fee is not None or shop is None,
+            "fee_configured": fee is not None or shop is None or needs_dest,
+            "delivery_needs_destination": needs_dest,
+            "delivery_distance_km": quote["distance_km"] if quote else None,
+            "delivery_method": quote["method"] if quote else None,
             "pending_confirmation": any(r["status"] == "submitted" for r in req_out)}
 
 
 @router.get("")
-def read_cart(user: CurrentUser, db: DB):
-    out = cart_view(db, user)
+def read_cart(user: CurrentUser, db: DB, address_id: int | None = None):
+    out = cart_view(db, user, address_id)
     db.commit()
     return out
 
@@ -210,6 +220,9 @@ def create_request(body: RequestIn, user: CurrentUser, db: DB):
     r = ProductRequest(user_id=user.id, shop_id=shop.id, **body.model_dump(exclude={"shop_id"}))
     db.add(r)
     db.flush()
+    msg = f"{user.full_name} wants {r.quantity} × {r.name}" + (f" ({r.brand})" if r.brand else "") + ". Send a price."
+    notify_shop(db, shop.id, "request_new", "New item request", msg)
+    notify_admins(db, "request_new", "New item request", f"{shop.name}: {msg}")
     out = cart_view(db, user)
     db.commit()
     return out

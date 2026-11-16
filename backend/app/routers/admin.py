@@ -5,11 +5,13 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, or_, select
 
 from ..deps import DB, CurrentUser, SuperAdmin
-from ..models import (AuditLog, Campus, Category, Complaint, Hostel, DeliveryPricing, Order, OrderStatus, Payment,
+from ..models import (AuditLog, Campus, Category, Complaint, Hostel, ProductRequest, RequestStatus, DeliveryPricing, Order, OrderStatus, Payment,
                       PaymentStatus, Promotion, Review, Rider, Role, Shop, ShopStaff, SystemSetting, University, User)
 from ..security import hash_password
 from ..serializers import f, shop_out
 from ..services.audit import audit
+from ..services.maps import MapsError, get_maps
+from ..services.pricing import MODES, SETTING_KEY
 from ..services.util import money, normalize_gh_phone
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[SuperAdmin])
@@ -129,11 +131,13 @@ class StaffIn(BaseModel):
     role: Role
 
 
-def _create_user(db, body: StaffIn, role: Role) -> User:
+def _create_user(db, body, role: Role) -> User:
     phone = normalize_gh_phone(body.phone)
-    if db.scalar(select(User).where(or_(User.email == body.email.lower(), User.phone == phone))):
+    email = body.email.lower() if body.email else None
+    clash = [User.phone == phone] + ([User.email == email] if email else [])
+    if db.scalar(select(User).where(or_(*clash))):
         raise HTTPException(409, "An account with this email or phone number already exists.")
-    u = User(email=body.email.lower(), phone=phone, full_name=body.full_name.strip(), role=role,
+    u = User(email=email, phone=phone, full_name=body.full_name.strip(), role=role,
              password_hash=hash_password(body.password), email_verified=True)
     db.add(u)
     db.flush()
@@ -153,9 +157,13 @@ def add_staff(sid: int, body: StaffIn, admin: CurrentUser, db: DB):
     return _user_out(u)
 
 
-class RiderIn(StaffIn):
+class RiderIn(BaseModel):
+    """Riders sign in with their phone number. Email is optional."""
+    full_name: str = Field(min_length=2, max_length=200)
+    phone: str
+    email: EmailStr | None = None
+    password: str = Field(min_length=8, max_length=128)
     campus_id: int
-    role: Role = Role.rider
 
 
 @router.post("/riders", status_code=201)
@@ -342,3 +350,144 @@ def hostel_active(hid: int, body: ShopActiveIn, admin: CurrentUser, db: DB):
     audit(db, admin.id, "hostel.active", f"hostel:{hid}", {"active": body.active})
     db.commit()
     return {"id": h.id, "active": h.active}
+
+
+class PasswordIn(BaseModel):
+    password: str = Field(min_length=8, max_length=128)
+
+
+@router.post("/users/{uid}/password")
+def admin_set_password(uid: int, body: PasswordIn, admin: CurrentUser, db: DB):
+    """For riders and staff without email, who cannot use the email reset link."""
+    u = db.get(User, uid)
+    if not u:
+        raise HTTPException(404, "User not found.")
+    u.password_hash = hash_password(body.password)
+    audit(db, admin.id, "user.password_reset", f"user:{u.id}")
+    db.commit()
+    return {"ok": True}
+
+
+# ---- distance-based delivery pricing and locations ----
+class DistanceIn(BaseModel):
+    rate_per_km: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    min_fee: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
+    travel_mode: str = "WALK"
+
+
+@router.put("/delivery-distance")
+def set_distance_pricing(body: DistanceIn, admin: CurrentUser, db: DB):
+    if body.travel_mode not in MODES:
+        raise HTTPException(422, "travel_mode must be WALK, DRIVE or TWO_WHEELER.")
+    val = {"rate_per_km": str(body.rate_per_km), "min_fee": str(body.min_fee) if body.min_fee is not None else None,
+           "travel_mode": body.travel_mode}
+    row = db.get(SystemSetting, SETTING_KEY)
+    if row:
+        row.value = val
+    else:
+        db.add(SystemSetting(key=SETTING_KEY, value=val))
+    audit(db, admin.id, "delivery_distance.set", None, val)
+    db.commit()
+    return val
+
+
+@router.get("/delivery-distance")
+def get_distance_pricing(db: DB):
+    row = db.get(SystemSetting, SETTING_KEY)
+    return row.value if row else None
+
+
+class LocationIn(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+@router.put("/shops/{sid}/location")
+def set_shop_location(sid: int, body: LocationIn, admin: CurrentUser, db: DB):
+    s = db.get(Shop, sid)
+    if not s:
+        raise HTTPException(404, "Shop not found.")
+    s.latitude, s.longitude = body.latitude, body.longitude
+    audit(db, admin.id, "shop.location", f"shop:{sid}", body.model_dump())
+    db.commit()
+    return {"id": s.id, "latitude": body.latitude, "longitude": body.longitude}
+
+
+@router.put("/hostels/{hid}/location")
+def set_hostel_location(hid: int, body: LocationIn, admin: CurrentUser, db: DB):
+    h = db.get(Hostel, hid)
+    if not h:
+        raise HTTPException(404, "Hostel not found.")
+    h.latitude, h.longitude = body.latitude, body.longitude
+    audit(db, admin.id, "hostel.location", f"hostel:{hid}", body.model_dump())
+    db.commit()
+    return {"id": h.id, "latitude": body.latitude, "longitude": body.longitude}
+
+
+@router.get("/locations")
+def list_locations(db: DB):
+    return {"shops": [{"id": s.id, "name": s.name, "latitude": float(s.latitude) if s.latitude is not None else None,
+                       "longitude": float(s.longitude) if s.longitude is not None else None} for s in db.scalars(select(Shop))],
+            "hostels": [{"id": h.id, "name": h.name, "latitude": float(h.latitude) if h.latitude is not None else None,
+                         "longitude": float(h.longitude) if h.longitude is not None else None}
+                        for h in db.scalars(select(Hostel).order_by(Hostel.sort_order))]}
+
+
+class GeocodeIn(BaseModel):
+    apply: bool = False
+    only_missing: bool = True
+    area_hint: str = Field(default="", max_length=200)  # e.g. the university name, to improve matches
+
+
+@router.post("/geocode")
+def geocode_all(body: GeocodeIn, admin: CurrentUser, db: DB):
+    """Ask Google where the shops and hostels are. By default this only PREVIEWS the results.
+    Check them on a map, then call again with apply=true (or set exact points by hand)."""
+    try:
+        maps = get_maps()
+    except MapsError:
+        raise HTTPException(503, "Google Maps is not set up. Add GOOGLE_MAPS_API_KEY, or enter locations by hand.")
+    out = []
+    targets = [("shop", s.id, f"{s.name}, {s.location or ''}", s) for s in db.scalars(select(Shop))] + \
+              [("hostel", h.id, h.name, h) for h in db.scalars(select(Hostel))]
+    for kind, id_, name, obj in targets:
+        if body.only_missing and obj.latitude is not None:
+            continue
+        q = ", ".join(x for x in (name, body.area_hint, "Ghana") if x)
+        try:
+            found = maps.geocode(q)
+        except MapsError:
+            found = None
+        out.append({"type": kind, "id": id_, "name": name, "query": q,
+                    "latitude": found[0] if found else None, "longitude": found[1] if found else None,
+                    "found": bool(found), "applied": bool(found and body.apply)})
+        if found and body.apply:
+            obj.latitude, obj.longitude = found
+    if body.apply:
+        audit(db, admin.id, "geocode.apply", None, {"count": sum(1 for o in out if o["applied"])})
+    db.commit()
+    return out
+
+
+# ---- unlisted item requests across all shops ----
+@router.get("/requests")
+def all_requests(db: DB, status: str | None = None):
+    q = select(ProductRequest)
+    if status:
+        try:
+            q = q.where(ProductRequest.status == RequestStatus(status))
+        except ValueError:
+            raise HTTPException(422, "Unknown status.")
+    rows = db.scalars(q.order_by(ProductRequest.id.desc()).limit(200)).all()
+    return [{"id": r.id, "shop_id": r.shop_id, "user_id": r.user_id, "name": r.name, "description": r.description,
+             "brand": r.brand, "quantity": r.quantity, "image_url": r.image_url, "status": r.status.value,
+             "confirmed_unit_price": f(r.confirmed_unit_price), "order_id": r.order_id} for r in rows]
+
+
+@router.post("/requests/{rid}/respond")
+def admin_respond(rid: int, body: dict, admin: CurrentUser, db: DB):
+    from .shop import RespondIn, respond
+    r = db.get(ProductRequest, rid)
+    if not r:
+        raise HTTPException(404, "Request not found.")
+    return respond(rid, RespondIn(**body), admin, db, r.shop_id)

@@ -1,5 +1,5 @@
 """Create a rider account. Usage:
-python -m app.scripts.create_rider --name "Sammy" --phone 0264944652 --email sammy@example.com --password '...'
+python -m app.scripts.create_rider --name "Sammy" --phone 0264944652 --password '...'
 """
 import argparse
 from sqlalchemy import select
@@ -11,7 +11,7 @@ from ..services.util import normalize_gh_phone
 ap = argparse.ArgumentParser()
 ap.add_argument("--name", required=True)
 ap.add_argument("--phone", required=True)
-ap.add_argument("--email", required=True)
+ap.add_argument("--email", default=None, help="optional; riders sign in with their phone number")
 ap.add_argument("--password", required=True)
 ap.add_argument("--campus-id", type=int)
 a = ap.parse_args()
@@ -19,7 +19,7 @@ with SessionLocal() as db:
     campus = db.get(Campus, a.campus_id) if a.campus_id else db.scalar(select(Campus))
     if not campus:
         raise SystemExit("No campus found. Run python -m app.seed first.")
-    u = User(email=a.email.lower(), phone=normalize_gh_phone(a.phone), full_name=a.name, role=Role.rider,
+    u = User(email=a.email.lower() if a.email else None, phone=normalize_gh_phone(a.phone), full_name=a.name, role=Role.rider,
              password_hash=hash_password(a.password), email_verified=True)
     db.add(u)
     db.flush()

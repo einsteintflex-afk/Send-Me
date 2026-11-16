@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     # Paystack. Leave empty until you have keys; payments then return 503.
     paystack_secret_key: str = ""
     paystack_base_url: str = "https://api.paystack.co"
+    # Server-side Google key with Routes API and Geocoding API enabled. Optional.
+    google_maps_api_key: str = ""
     currency: str = "GHS"
     rate_limit_auth_per_minute: int = 20
 

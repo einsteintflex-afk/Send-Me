@@ -18,3 +18,11 @@
 
 ## Session 4
 - Received product table and shop phones. Built `ugmsa_catalog.csv` (88 products, exact names/prices, untracked stock left blank). Seed now sets shop phones and a Frozen & Chilled category. Added import test. `CATALOG_REVIEW.md` lists items to confirm.
+
+## Session 5
+- Riders can have no email (phone login). Admin can reset a password. Migration 0003.
+- Distance pricing: fee = route km x admin rate (min fee optional). Google Routes API when keyed, straight-line fallback labelled approximate, flat-fee fallback. Distance cached. Stored on the order.
+- Shop/hostel/address coordinates, admin geocode preview/apply, `/delivery/quote`, `/cart?address_id=`.
+- Tracking API `GET /orders/{id}/tracking`: rider position only while On the Way, stale flag, private to the student. Rider GPS removed from generic order output.
+- Unlisted requests now notify shop staff and all super admins at once; `/admin/requests` lists and prices across shops.
+- 65 tests pass. Google was never called for real (no key). No real coordinates exist yet.

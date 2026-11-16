@@ -19,6 +19,7 @@ from app.models import (Campus, Category, Product, ProductVariant, Rider, Role, 
                         DeliveryPricing)
 from app.security import hash_password
 from app.seed import seed
+from app.services import maps as maps_svc
 from app.services import payments as psvc
 
 
@@ -43,6 +44,7 @@ def fresh_db():
     Base.metadata.create_all(engine)
     FakeProvider.results, FakeProvider.initialized = {}, {}
     psvc.set_provider_factory(FakeProvider)
+    maps_svc.set_maps_factory(maps_svc.GoogleMapsProvider)  # no key in tests: falls back to straight-line
     with SessionLocal() as db:
         seed(db, "Test University")
         shop = db.scalar(select(Shop))

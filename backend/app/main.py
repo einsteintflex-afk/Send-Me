@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
-from .routers import admin, auth, cart, catalog, orders, rider, shop, support
+from .routers import admin, auth, cart, catalog, delivery, orders, rider, shop, support
 
 settings = get_settings()
 settings.validate_for_production()
@@ -47,7 +47,7 @@ async def unhandled(request: Request, exc: Exception):
     return JSONResponse({"detail": "Something went wrong on our side. Please try again."}, status_code=500)
 
 
-for r in (auth.router, catalog.router, cart.router, orders.router, shop.router, rider.router, admin.router, support.router):
+for r in (auth.router, catalog.router, cart.router, orders.router, delivery.router, shop.router, rider.router, admin.router, support.router):
     app.include_router(r)
 
 os.makedirs(settings.upload_dir, exist_ok=True)

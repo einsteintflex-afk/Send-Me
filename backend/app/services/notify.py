@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ..models import Notification, ShopStaff, StudentProfile
+from ..models import Notification, Role, ShopStaff, StudentProfile, User
 
 log = logging.getLogger("sendme.notify")
 OUTBOX: list[dict] = []  # dev/test email outbox
@@ -23,4 +23,9 @@ def notify(db: Session, user_id: int, kind: str, title: str, body: str, order_id
 
 def notify_shop(db: Session, shop_id: int, kind: str, title: str, body: str, order_id: int | None = None) -> None:
     for uid in db.scalars(select(ShopStaff.user_id).where(ShopStaff.shop_id == shop_id)):
+        db.add(Notification(user_id=uid, kind=kind, title=title, body=body, order_id=order_id))
+
+
+def notify_admins(db: Session, kind: str, title: str, body: str, order_id: int | None = None) -> None:
+    for uid in db.scalars(select(User.id).where(User.role == Role.super_admin, User.is_active.is_(True))):
         db.add(Notification(user_id=uid, kind=kind, title=title, body=body, order_id=order_id))

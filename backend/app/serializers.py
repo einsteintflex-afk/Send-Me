@@ -36,13 +36,13 @@ def order_out(o: Order, include_rider=True):
     a = o.assignment
     rider = None
     if include_rider and a:
-        rider = {"name": a.rider.user.full_name, "phone": a.rider.user.phone, "accepted": a.accepted_at is not None,
-                 "lat": f(a.rider.last_lat), "lng": f(a.rider.last_lng)}
+        rider = {"name": a.rider.user.full_name, "phone": a.rider.user.phone, "accepted": a.accepted_at is not None}
     out = {"id": o.id, "number": o.number, "status": o.status.value, "payment_status": o.payment_status.value,
            "shop": {"id": o.shop.id, "name": o.shop.name, "location": o.shop.location, "phones": o.shop.phones or []},
            "destination": o.destination, "instructions": o.instructions,
            "subtotal": f(o.subtotal), "delivery_fee": f(o.delivery_fee), "discount": f(o.discount), "total": f(o.total),
-           "currency": "GHS", "estimated_arrival": o.estimated_arrival.isoformat() if o.estimated_arrival else None,
+           "currency": "GHS", "delivery_distance_km": f(o.delivery_distance_km), "delivery_method": o.delivery_method,
+           "estimated_arrival": o.estimated_arrival.isoformat() if o.estimated_arrival else None,
            "created_at": o.created_at.isoformat(), "cancel_reason": o.cancel_reason, "rider": rider,
            "items": [{"id": i.id, "name": i.name, "variant": i.variant_name, "unit_price": f(i.unit_price),
                       "quantity": i.quantity, "is_request": i.is_request, "request_id": i.request_id,

@@ -8,7 +8,7 @@ from ..models import (Address, Availability, Cart, CartItem, DeliveryAssignment,
                       OrderStatus, OrderStatusHistory, PaymentStatus, Product, ProductRequest, RequestStatus,
                       Rider, Shop, User)
 from .notify import notify, notify_shop
-from .pricing import delivery_fee
+from .pricing import quote_delivery, dest_coords
 from .util import money
 
 ALLOWED = {
@@ -45,7 +45,9 @@ def next_order_number(db: Session) -> str:
 
 def snapshot_destination(addr: Address) -> dict:
     return {"kind": addr.kind, "label": addr.label, "hostel": addr.hostel, "block": addr.block, "room": addr.room,
-            "place": addr.place, "campus_id": addr.campus_id}
+            "place": addr.place, "campus_id": addr.campus_id, "hostel_id": addr.hostel_id,
+            "latitude": float(addr.latitude) if addr.latitude is not None else None,
+            "longitude": float(addr.longitude) if addr.longitude is not None else None}
 
 
 def create_order_from_cart(db: Session, user: User, address_id: int, instructions: str | None,
@@ -76,9 +78,10 @@ def create_order_from_cart(db: Session, user: User, address_id: int, instruction
     shop = db.get(Shop, shop_ids.pop())
     if not shop.active or not shop.accepting_orders:
         raise HTTPException(409, f"{shop.name} is not taking orders right now.")
-    fee = delivery_fee(db, shop)
-    if fee is None:
+    quote = quote_delivery(db, shop, addr)
+    if quote is None:
         raise HTTPException(409, "Delivery is not available yet because the delivery fee has not been set.")
+    fee = quote["fee"]
 
     order = Order(user_id=user.id, shop_id=shop.id, destination=snapshot_destination(addr),
                   instructions=(instructions or None), idempotency_key=idempotency_key,
@@ -111,6 +114,7 @@ def create_order_from_cart(db: Session, user: User, address_id: int, instruction
     if total <= 0:
         raise HTTPException(422, "Nothing to pay for yet.")
     order.subtotal, order.delivery_fee, order.total = money(subtotal), money(fee), money(total)
+    order.delivery_distance_km, order.delivery_method = quote["distance_km"], quote["method"]
     order.history.append(OrderStatusHistory(status=OrderStatus.pending, note="Order created, awaiting payment",
                                             actor_id=user.id))
     db.add(order)

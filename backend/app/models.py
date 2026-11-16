@@ -85,13 +85,16 @@ class Hostel(Base):
     name: Mapped[str] = mapped_column(String(200))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6))   # confirmed by admin, never guessed
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6))
     __table_args__ = (UniqueConstraint("campus_id", "name"),)
 
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    # Students and staff have an email. Riders may sign in with just a phone number.
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
     phone: Mapped[str] = mapped_column(String(20), unique=True)
     full_name: Mapped[str] = mapped_column(String(200))
     password_hash: Mapped[str] = mapped_column(String(255))
@@ -121,6 +124,9 @@ class Address(Base, TimestampMixin):
     block: Mapped[str | None] = mapped_column(String(50))
     room: Mapped[str | None] = mapped_column(String(50))
     place: Mapped[str | None] = mapped_column(String(200))  # pickup point / alternative location
+    hostel_id: Mapped[int | None] = mapped_column(ForeignKey("hostels.id"))
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6))
     instructions: Mapped[str | None] = mapped_column(String(300))
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -137,6 +143,8 @@ class Shop(Base, TimestampMixin):
     delivery_estimate_minutes: Mapped[int | None] = mapped_column(Integer)  # None = not configured
     accepting_orders: Mapped[bool] = mapped_column(Boolean, default=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6))
     campus: Mapped[Campus] = relationship()
 
 
@@ -263,6 +271,8 @@ class Order(Base, TimestampMixin):
     estimated_arrival: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     idempotency_key: Mapped[str | None] = mapped_column(String(64))
     cancel_reason: Mapped[str | None] = mapped_column(String(300))
+    delivery_distance_km: Mapped[Decimal | None] = mapped_column(Numeric(8, 3))
+    delivery_method: Mapped[str | None] = mapped_column(String(20))  # google | straight_line | flat
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     history: Mapped[list["OrderStatusHistory"]] = relationship(back_populates="order", cascade="all, delete-orphan",
                                                                order_by="OrderStatusHistory.id")
@@ -433,3 +443,14 @@ class OrderCounter(Base):
 
 
 Index("ix_products_name_lower", Product.name)
+
+
+class DistanceCache(Base):
+    __tablename__ = "distance_cache"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    origin_key: Mapped[str] = mapped_column(String(40))
+    dest_key: Mapped[str] = mapped_column(String(40))
+    mode: Mapped[str] = mapped_column(String(20))
+    meters: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    __table_args__ = (UniqueConstraint("origin_key", "dest_key", "mode"),)

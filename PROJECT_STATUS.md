@@ -16,6 +16,10 @@ Last updated: session 2. Read this first, then `TODO.md`.
 ## Definition-of-done journey, backend only
 Register, login, saved destinations, browse, search, cart, unlisted request, checkout, payment, shop accept and prepare, rider assignment, rider delivery, order history and notifications are all covered by `tests/test_workflow.py` using a fake payment provider. A real provider transaction (step 10) has not been done.
 
+## Maps, pricing and tracking
+- Built and tested against a fake Google. **Not run against real Google.** No real coordinates are stored; the shop and hostels have none until you add the key and confirm them.
+- Tracker is an API. The map the student sees is part of the unbuilt frontend.
+
 ## Business rules implemented
 - Prices and stock are nullable. No price means the item is listed but cannot be ordered. No stock number means stock is not tracked.
 - Delivery fee comes from admin settings (`PUT /admin/delivery-pricing`). Checkout is blocked until one is set.

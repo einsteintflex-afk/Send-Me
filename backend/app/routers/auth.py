@@ -5,7 +5,7 @@ from sqlalchemy import select, or_
 
 from ..config import get_settings
 from ..deps import DB, CurrentUser
-from ..models import (Address, AuthToken, Campus, Role, StudentProfile, University, User)
+from ..models import (Address, AuthToken, Campus, Hostel, Role, StudentProfile, University, User)
 from ..security import (decode_token, hash_password, hash_token, make_token, random_token, verify_password)
 from ..services.notify import send_email
 from ..services.util import normalize_gh_phone
@@ -67,8 +67,9 @@ def register(body: RegisterIn, db: DB):
     db.add(user)
     db.flush()
     campus = db.scalar(select(Campus).where(Campus.university_id == uni.id, Campus.active.is_(True)))
+    h = match_hostel(db, body.hostel, campus.id if campus else None)
     db.add(Address(user_id=user.id, campus_id=campus.id if campus else None, kind="hostel", label=body.hostel,
-                   hostel=body.hostel, block=body.block, room=body.room, is_default=True))
+                   hostel=body.hostel, hostel_id=h.id if h else None, block=body.block, room=body.room, is_default=True))
     raw = _issue(db, user, "verify_email", 60 * 48)
     db.commit()
     send_email(user.email, "Verify your Send Me account", f"{S.frontend_url}/verify-email?token={raw}")
@@ -212,12 +213,30 @@ class AddressIn(BaseModel):
     place: str | None = Field(default=None, max_length=200)
     instructions: str | None = Field(default=None, max_length=300)
     campus_id: int | None = None
+    hostel_id: int | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     is_default: bool = False
 
 
+def match_hostel(db, name: str | None, campus_id: int | None) -> Hostel | None:
+    if not name:
+        return None
+    q = select(Hostel).where(Hostel.active.is_(True))
+    if campus_id:
+        q = q.where(Hostel.campus_id == campus_id)
+    for h in db.scalars(q):
+        if h.name.strip().lower() == name.strip().lower():
+            return h
+    return None
+
+
 def addr_out(a: Address):
-    return {c: getattr(a, c) for c in ("id", "kind", "label", "hostel", "block", "room", "place", "instructions",
-                                       "campus_id", "is_default")}
+    out = {c: getattr(a, c) for c in ("id", "kind", "label", "hostel", "block", "room", "place", "instructions",
+                                      "campus_id", "hostel_id", "is_default")}
+    out["latitude"] = float(a.latitude) if a.latitude is not None else None
+    out["longitude"] = float(a.longitude) if a.longitude is not None else None
+    return out
 
 
 @router.get("/addresses")
@@ -234,7 +253,12 @@ def add_address(body: AddressIn, user: CurrentUser, db: DB):
     if body.is_default:
         for a in db.scalars(select(Address).where(Address.user_id == user.id)):
             a.is_default = False
-    a = Address(user_id=user.id, **body.model_dump())
+    data = body.model_dump()
+    if body.kind == "hostel" and not body.hostel_id:
+        h = match_hostel(db, body.hostel, body.campus_id)
+        data["hostel_id"] = h.id if h else None
+        data["campus_id"] = data["campus_id"] or (h.campus_id if h else None)
+    a = Address(user_id=user.id, **data)
     db.add(a)
     db.commit()
     return addr_out(a)
@@ -248,7 +272,11 @@ def edit_address(aid: int, body: AddressIn, user: CurrentUser, db: DB):
     if body.is_default:
         for o in db.scalars(select(Address).where(Address.user_id == user.id)):
             o.is_default = False
-    for k, v in body.model_dump().items():
+    data = body.model_dump()
+    if body.kind == "hostel" and not body.hostel_id:
+        h = match_hostel(db, body.hostel, body.campus_id or a.campus_id)
+        data["hostel_id"] = h.id if h else None
+    for k, v in data.items():
         setattr(a, k, v)
     db.commit()
     return addr_out(a)
