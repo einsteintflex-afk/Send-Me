@@ -42,3 +42,27 @@ docker compose up --build
 - Run `alembic upgrade head` on each deploy (the Dockerfile does).
 - Back up PostgreSQL daily (`pg_dump`) and back up the uploads volume. Test a restore before launch.
 - Add the Paystack webhook URL (see ENVIRONMENT_VARIABLES.md).
+
+
+## Web app
+```powershell
+cd frontend
+npm install
+npm run build        # creates frontend/dist, served by the API at http://localhost:8000
+npm run dev          # optional: hot-reload dev server on :5173 (set VITE_API_URL=http://localhost:8000)
+```
+## Demo data (development only)
+```powershell
+cd backend
+python -m app.seed_demo
+```
+Creates demo accounts (password `demo12345`), placeholder map points and a placeholder delivery rate, and loads the 88-product catalogue. It refuses to run when `ENV=production`.
+
+## Browser end-to-end checks
+With the server running on a fresh demo database: `cd frontend/e2e && node student.cjs` and `node platform.cjs` (needs `npm i -D playwright` and a Chromium).
+
+## Docker (web app + API + PostgreSQL)
+```powershell
+copy backend\.env.example backend\.env
+docker compose up --build
+```

@@ -31,3 +31,6 @@
 - Backend: simulated checkout (MockProvider) when no Paystack key and ENV != production; demo seed (`python -m app.seed_demo`, dev only); `/config`, `/admin/integrations`, `/products/popular`; static serving of `frontend/dist`.
 - Frontend (`frontend/`): Vite + React + TypeScript + Tailwind PWA, hash routing, Leaflet/OpenStreetMap map (no key). Student app done: auth, home, explore/shop, product, cart, request item, checkout, simulated payment, orders, live tracking, account, notifications.
 - `frontend/e2e/student.cjs` drives the student journey in a phone-size browser. Passing.
+- Shop dashboard, rider app, admin dashboard built (`frontend/src/{shop,rider,admin}`). Shop/rider/admin tracking endpoints added.
+- `frontend/e2e/platform.cjs`: student -> shop accepts/prepares/assigns -> rider accepts/picks up/shares location -> student sees live map -> delivered -> admin creates a phone-only rider. Found and fixed: Leaflet teardown error, order dialog re-centering on desktop. A flaky failure was an ambiguous test locator ("Assign" matching "Assign a rider first"), fixed.
+- Root `Dockerfile` (multi-stage: builds web app, serves with API), compose updated.

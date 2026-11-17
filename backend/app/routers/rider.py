@@ -42,6 +42,12 @@ def delivery(oid: int, user: CurrentUser, db: DB):
     return _out(db, _mine(db, user, oid))
 
 
+@router.get("/deliveries/{oid}/tracking")
+def delivery_tracking(oid: int, user: CurrentUser, db: DB):
+    from .delivery import build_tracking
+    return build_tracking(db, _mine(db, user, oid))
+
+
 @router.post("/deliveries/{oid}/accept")
 def accept(oid: int, user: CurrentUser, db: DB):
     o = _mine(db, user, oid)

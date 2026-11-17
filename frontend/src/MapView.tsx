@@ -10,10 +10,10 @@ export default function MapView({ pins, height = 260 }: { pins: Pin[]; height?: 
   const layer = useRef<L.LayerGroup | null>(null);
   useEffect(() => {
     if (!el.current || map.current) return;
-    map.current = L.map(el.current, { zoomControl: true, attributionControl: true }).setView([5.65, -0.187], 16);
+    map.current = L.map(el.current, { zoomControl: true, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([5.65, -0.187], 16);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map.current);
     layer.current = L.layerGroup().addTo(map.current);
-    return () => { layer.current = null; map.current?.remove(); map.current = null; };
+    return () => { layer.current = null; try { map.current?.stop(); map.current?.remove(); } catch { /* already gone */ } map.current = null; };
   }, []);
   useEffect(() => {
     if (!map.current || !layer.current) return;
@@ -25,8 +25,8 @@ export default function MapView({ pins, height = 260 }: { pins: Pin[]; height?: 
       L.marker([p.lat, p.lng], { icon, title: p.label }).bindTooltip(p.label).addTo(layer.current!);
       pts.push([p.lat, p.lng]);
     });
-    if (pts.length > 1) { L.polyline(pts, { color: "#16A6A0", weight: 3, dashArray: "6 8" }).addTo(layer.current); map.current.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 18 }); }
-    else if (pts.length === 1) map.current.setView(pts[0], 17);
+    if (pts.length > 1) { L.polyline(pts, { color: "#16A6A0", weight: 3, dashArray: "6 8" }).addTo(layer.current); map.current.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 18, animate: false }); }
+    else if (pts.length === 1) map.current.setView(pts[0], 17, { animate: false });
     const m = map.current;
     const t = window.setTimeout(() => { try { if (map.current === m) m.invalidateSize(); } catch { /* map was torn down */ } }, 60);
     return () => clearTimeout(t);

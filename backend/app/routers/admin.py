@@ -479,7 +479,7 @@ def all_requests(db: DB, status: str | None = None):
         except ValueError:
             raise HTTPException(422, "Unknown status.")
     rows = db.scalars(q.order_by(ProductRequest.id.desc()).limit(200)).all()
-    return [{"id": r.id, "shop_id": r.shop_id, "user_id": r.user_id, "name": r.name, "description": r.description,
+    return [{"id": r.id, "shop_id": r.shop_id, "user_id": r.user_id, "student": db.get(User, r.user_id).full_name, "name": r.name, "description": r.description,
              "brand": r.brand, "quantity": r.quantity, "image_url": r.image_url, "status": r.status.value,
              "confirmed_unit_price": f(r.confirmed_unit_price), "order_id": r.order_id} for r in rows]
 
@@ -527,3 +527,12 @@ def list_riders(db: DB):
     rows = db.scalars(select(Rider)).all()
     return [{"id": r.user_id, "name": r.user.full_name, "phone": r.user.phone, "is_active": r.user.is_active,
              "campus_id": r.campus_id, "last_seen_at": r.last_seen_at.isoformat() if r.last_seen_at else None} for r in rows]
+
+
+@router.get("/orders/{oid}/tracking")
+def admin_tracking(oid: int, db: DB):
+    from .delivery import build_tracking
+    o = db.get(Order, oid)
+    if not o:
+        raise HTTPException(404, "Order not found.")
+    return build_tracking(db, o)

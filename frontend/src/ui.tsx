@@ -62,7 +62,7 @@ export function ProductImage({ name, category, url, className = "" }: { name: st
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   useEffect(() => { if (!open) return; const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [open, onClose]);
   if (!open) return null;
-  return <div className="fixed inset-0 z-[1500] flex items-end justify-center bg-navy/50 sm:items-center" onClick={onClose}>
+  return <div className="fixed inset-0 z-[1500] flex items-end justify-center bg-navy/50 sm:items-start sm:pt-12" onClick={onClose}>
     <div role="dialog" aria-modal="true" aria-label={title} className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}
       style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
       <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-extrabold text-navy">{title}</h2>

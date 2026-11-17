@@ -1,30 +1,31 @@
 # Send Me: Project Status
 
-Last updated: session 2. Read this first, then `TODO.md`.
+Last updated: session 6. Read this first, then `TODO.md`.
 
-## Summary
+## What exists and works
 | Area | State |
 |---|---|
-| Backend API (FastAPI, SQLAlchemy, Alembic) | Built. 52 automated tests pass on SQLite. |
-| PostgreSQL | Schema and migration written. **Not yet run against a real Postgres server** (none available in the dev container). |
-| Paystack payments | Implemented (initialize, verify, signed webhook, duplicate protection). Tested with a fake provider only. **Never run against real Paystack, test or live.** Needs your test key. |
-| Student web app | **Not started.** Only the static design prototype `send-me.html` exists. It is not connected to the backend. |
-| Shop, rider and admin web apps | **Not started.** The backend APIs for all three exist and are tested. |
-| Push notifications | In-app notifications work. Push provider not wired. |
-| Product catalogue | 88 products ready to import from `backend/data/ugmsa_catalog.csv`. Items to confirm in `CATALOG_REVIEW.md`. |
+| Backend API | Built. 67 automated tests pass (SQLite). |
+| Student app | Built and tested in a phone-size browser: register, sign in, home, categories, shop page, search with suggestions and recent searches, product page, cart, unlisted-item requests, checkout with saved destinations, payment, confirmation, order history, live tracking map, account, notifications. |
+| Shop dashboard | Built and tested: overview, accept/reject orders, prepare, assign rider, delivery monitor with live map, product management (price, availability, stock, options, photos), unlisted-item requests with instant pricing, settings. |
+| Rider app | Built and tested: phone + password sign-in (no email), assigned deliveries, customer details and call, navigation link, accept / picked up / delivered / failed, GPS sharing while delivering. |
+| Administrator dashboard | Built and tested: analytics, orders, payments, item requests, shops and staff, riders (create with phone only, reset password, suspend), students, delivery pricing and locations, catalogue, promotions, hostels, support, system status and launch checklist, audit log. |
+| Catalogue | 88 UGMSA Mini Mart products (exact names and prices). Review notes in `CATALOG_REVIEW.md`. |
+| Browser end-to-end | `frontend/e2e/platform.cjs` runs student -> shop -> rider -> tracking -> admin. Passed 5 of 5 consecutive runs after a test-locator fix. |
 
-## Definition-of-done journey, backend only
-Register, login, saved destinations, browse, search, cart, unlisted request, checkout, payment, shop accept and prepare, rider assignment, rider delivery, order history and notifications are all covered by `tests/test_workflow.py` using a fake payment provider. A real provider transaction (step 10) has not been done.
+## What is simulated until you configure it (never silently)
+| Service | Without config | Production |
+|---|---|---|
+| Payments | **Simulated checkout**, labelled "TEST MODE". Success only after the simulated page records it, then verified by the server. | Set `PAYSTACK_SECRET_KEY`; add webhook URL. Real Paystack has **never been run** here. |
+| Maps / distance | OpenStreetMap map; straight-line distance (shown as approximate) | Set `GOOGLE_MAPS_API_KEY` |
+| Delivery rate and locations | Demo values (banner shown) | Set in Admin > Delivery |
+| Email | Written to the server log | Configure SMTP/provider |
+| Push | Not available | Planned |
 
-## Maps, pricing and tracking
-- Built and tested against a fake Google. **Not run against real Google.** No real coordinates are stored; the shop and hostels have none until you add the key and confirm them.
-- Tracker is an API. The map the student sees is part of the unbuilt frontend.
-
-## Business rules implemented
-- Prices and stock are nullable. No price means the item is listed but cannot be ordered. No stock number means stock is not tracked.
-- Delivery fee comes from admin settings (`PUT /admin/delivery-pricing`). Checkout is blocked until one is set.
-- Order number `SM-YYYY-NNNNNN` is assigned only when payment is verified. Shops never see unpaid orders.
-- Unlisted items are never given a price by the system. At checkout they are added unpriced. When the shop confirms a price, the student must approve and pay that amount separately.
-- Statuses are exactly: Pending, Accepted, Shopping, On the Way, Delivered, Cancelled.
-- Students can cancel only while Pending. A paid order that is cancelled becomes `refund_pending`. **Refunds are not automated.** Issue them in the Paystack dashboard.
-- One shop per order.
+## Known gaps
+- Not run on a real PostgreSQL server (SQLite only so far).
+- Real Paystack and Google calls untested (no keys). Map screen uses OpenStreetMap; swap to Google Maps JS when a browser key exists.
+- Refunds are manual (orders are flagged `refund_pending`).
+- Email sending and push notifications not implemented.
+- Product photos: none yet (honest placeholders shown). Shop can upload from the dashboard.
+- Accessibility and low-bandwidth pass not done beyond basics. No automated unit tests for the frontend.

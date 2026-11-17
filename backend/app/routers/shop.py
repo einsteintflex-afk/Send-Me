@@ -70,6 +70,12 @@ def list_orders(user: CurrentUser, db: DB, shop_id: int | None = None, status: s
     return [_shop_order_out(db, o) for o in db.scalars(q.order_by(Order.id.desc()).limit(200))]
 
 
+@router.get("/orders/{oid}/tracking")
+def order_tracking(oid: int, user: CurrentUser, db: DB, shop_id: int | None = None):
+    from .delivery import build_tracking
+    return build_tracking(db, _order(db, sid(db, user, shop_id), oid))
+
+
 @router.get("/orders/{oid}")
 def order_detail(oid: int, user: CurrentUser, db: DB, shop_id: int | None = None):
     return _shop_order_out(db, _order(db, sid(db, user, shop_id), oid))
@@ -222,8 +228,8 @@ def product_image(pid: int, user: CurrentUser, db: DB, file: UploadFile = File(.
 
 
 # ---- unlisted item requests ----
-def _req_out(r: ProductRequest):
-    return {"id": r.id, "name": r.name, "description": r.description, "brand": r.brand, "quantity": r.quantity,
+def _req_out(r: ProductRequest, student: str | None = None):
+    return {"student": student, "id": r.id, "name": r.name, "description": r.description, "brand": r.brand, "quantity": r.quantity,
             "image_url": r.image_url, "status": r.status.value, "confirmed_unit_price": f(r.confirmed_unit_price),
             "order_id": r.order_id, "shop_note": r.shop_note}
 
@@ -237,7 +243,7 @@ def list_requests(user: CurrentUser, db: DB, shop_id: int | None = None, status:
             q = q.where(ProductRequest.status == RequestStatus(status))
         except ValueError:
             raise HTTPException(422, "Unknown status.")
-    return [_req_out(r) for r in db.scalars(q.order_by(ProductRequest.id.desc()).limit(200))]
+    return [_req_out(r, db.get(User, r.user_id).full_name) for r in db.scalars(q.order_by(ProductRequest.id.desc()).limit(200))]
 
 
 class RespondIn(BaseModel):

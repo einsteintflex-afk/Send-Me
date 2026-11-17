@@ -4,7 +4,7 @@ services:
     environment: {POSTGRES_USER: sendme, POSTGRES_PASSWORD: sendme, POSTGRES_DB: sendme}
     volumes: [pgdata:/var/lib/postgresql/data]
   api:
-    build: ./backend
+    build: .
     env_file: ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://sendme:sendme@db:5432/sendme
