@@ -3,7 +3,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 
 from ..deps import DB
-from ..models import (Availability, Campus, Category, Hostel, Product, Promotion, SearchLog, Shop, University)
+from ..models import (Availability, Campus, Category, Hostel, Order, OrderItem, PaymentStatus, Product, Promotion, SearchLog, Shop, University)
 from ..security import decode_token
 from ..serializers import product_out, shop_out
 
@@ -93,6 +93,19 @@ def products(db: DB, q: str | None = Query(default=None, max_length=100), catego
         db.add(SearchLog(user_id=uid, term=q.strip().lower()[:100]))
         db.commit()
     return {"total": total, "items": [product_out(p) for p in rows]}
+
+
+@router.get("/products/popular")
+def popular_products(db: DB, limit: int = Query(default=8, ge=1, le=24)):
+    """Most ordered products (paid orders). Falls back to featured, then A to Z, so the shelf is never empty."""
+    counts = dict(db.execute(select(OrderItem.product_id, func.sum(OrderItem.quantity)).join(
+        Order, Order.id == OrderItem.order_id).where(Order.payment_status == PaymentStatus.paid,
+        OrderItem.product_id.is_not(None)).group_by(OrderItem.product_id)).all())
+    rows = db.scalars(select(Product).where(Product.active.is_(True), Product.price.is_not(None),
+                                            Product.availability == Availability.available)
+                      .options(joinedload(Product.category), joinedload(Product.shop))).unique().all()
+    rows.sort(key=lambda p: (-(counts.get(p.id, 0)), not p.featured, p.name))
+    return [product_out(p) for p in rows[:limit]]
 
 
 @router.get("/products/{pid}")

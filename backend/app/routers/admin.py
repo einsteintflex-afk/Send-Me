@@ -491,3 +491,39 @@ def admin_respond(rid: int, body: dict, admin: CurrentUser, db: DB):
     if not r:
         raise HTTPException(404, "Request not found.")
     return respond(rid, RespondIn(**body), admin, db, r.shop_id)
+
+
+@router.put("/universities/{uid}")
+def rename_university(uid: int, body: NameIn, admin: CurrentUser, db: DB):
+    u = db.get(University, uid)
+    if not u:
+        raise HTTPException(404, "University not found.")
+    u.name = body.name
+    audit(db, admin.id, "university.rename", f"university:{uid}", {"name": body.name})
+    db.commit()
+    return {"id": u.id, "name": u.name}
+
+
+@router.get("/orders/{oid}")
+def admin_order(oid: int, db: DB):
+    from ..serializers import order_out
+    o = db.get(Order, oid)
+    if not o:
+        raise HTTPException(404, "Order not found.")
+    out = order_out(o)
+    u = db.get(User, o.user_id)
+    out["customer"] = {"name": u.full_name, "phone": u.phone}
+    return out
+
+
+@router.get("/shops/{sid}/staff")
+def shop_staff(sid: int, db: DB):
+    rows = db.scalars(select(User).join(ShopStaff, ShopStaff.user_id == User.id).where(ShopStaff.shop_id == sid))
+    return [_user_out(u) for u in rows]
+
+
+@router.get("/riders")
+def list_riders(db: DB):
+    rows = db.scalars(select(Rider)).all()
+    return [{"id": r.user_id, "name": r.user.full_name, "phone": r.user.phone, "is_active": r.user.is_active,
+             "campus_id": r.campus_id, "last_seen_at": r.last_seen_at.isoformat() if r.last_seen_at else None} for r in rows]

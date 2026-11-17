@@ -55,11 +55,37 @@ class PaystackProvider:
         return self._call("GET", f"/transaction/verify/{reference}")
 
 
-_provider_factory = PaystackProvider
+class MockProvider:
+    """DEVELOPMENT ONLY. Simulated checkout used when no Paystack key is set and ENV is not production.
+    A payment counts as successful only after the simulated checkout page records the outcome."""
+
+    def initialize(self, *, email, amount_pesewas, reference, callback_url, metadata):
+        # relative URL so it works on any host
+        return {"authorization_url": f"/#/pay/mock?reference={reference}", "access_code": "mock"}
+
+    def verify(self, reference):
+        from ..db import SessionLocal
+        with SessionLocal() as db:
+            p = db.scalar(select(Payment).where(Payment.reference == reference))
+            outcome = (p.provider_payload or {}).get("mock_outcome") if p else None
+            return {"status": outcome or "abandoned", "amount": int(money(p.amount) * 100) if p else 0,
+                    "currency": get_settings().currency, "channel": "mock"}
+
+
+_provider_factory = None  # tests may override
+
+
+def payment_mode() -> str:
+    s = get_settings()
+    if s.paystack_secret_key:
+        return "live" if s.paystack_secret_key.startswith("sk_live") else "test"
+    return "mock" if s.env != "production" else "unconfigured"
 
 
 def get_provider() -> PaymentProvider:
-    return _provider_factory()
+    if _provider_factory:
+        return _provider_factory()
+    return MockProvider() if payment_mode() == "mock" else PaystackProvider()
 
 
 def set_provider_factory(f):  # used by tests
@@ -97,7 +123,7 @@ def init_payment(db: Session, order: Order, user: User, kind="order", request: P
     provider = get_provider()
     ref = new_reference()
     data = provider.initialize(email=user.email, amount_pesewas=int(money(amount) * 100), reference=ref,
-                               callback_url=f"{get_settings().frontend_url}/orders/{order.id}",
+                               callback_url=f"{get_settings().frontend_url}/?order={order.id}",
                                metadata={"order_id": order.id, "kind": kind})
     p = Payment(order_id=order.id, kind=kind, request_id=request.id if request else None, reference=ref,
                 amount=money(amount), currency=get_settings().currency, status="initialized",

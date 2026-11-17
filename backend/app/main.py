@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
-from .routers import admin, auth, cart, catalog, delivery, orders, rider, shop, support
+from .routers import admin, auth, cart, catalog, delivery, orders, rider, shop, support, system
 
 settings = get_settings()
 settings.validate_for_production()
@@ -47,7 +47,7 @@ async def unhandled(request: Request, exc: Exception):
     return JSONResponse({"detail": "Something went wrong on our side. Please try again."}, status_code=500)
 
 
-for r in (auth.router, catalog.router, cart.router, orders.router, delivery.router, shop.router, rider.router, admin.router, support.router):
+for r in (auth.router, catalog.router, cart.router, orders.router, delivery.router, system.router, shop.router, rider.router, admin.router, support.router):
     app.include_router(r)
 
 os.makedirs(settings.upload_dir, exist_ok=True)
@@ -57,3 +57,9 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 @app.get("/health")
 def health():
     return {"ok": True, "payments_configured": bool(settings.paystack_secret_key), "env": settings.env}
+
+
+# Serve the built web app (frontend/dist) from the same origin when it exists.
+_dist = os.path.abspath(settings.frontend_dist)
+if os.path.isdir(_dist):
+    app.mount("/", StaticFiles(directory=_dist, html=True), name="web")

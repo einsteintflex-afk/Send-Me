@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = 60
     refresh_token_days: int = 14
     frontend_url: str = "http://localhost:3000"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173"
     upload_dir: str = "./uploads"
     max_upload_bytes: int = 2_000_000
     email_backend: str = "console"  # console | smtp (smtp not yet implemented)
@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     paystack_base_url: str = "https://api.paystack.co"
     # Server-side Google key with Routes API and Geocoding API enabled. Optional.
     google_maps_api_key: str = ""
+    frontend_dist: str = "../frontend/dist"
     currency: str = "GHS"
     rate_limit_auth_per_minute: int = 20
 

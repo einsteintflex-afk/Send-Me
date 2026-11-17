@@ -72,7 +72,7 @@ def register(body: RegisterIn, db: DB):
                    hostel=body.hostel, hostel_id=h.id if h else None, block=body.block, room=body.room, is_default=True))
     raw = _issue(db, user, "verify_email", 60 * 48)
     db.commit()
-    send_email(user.email, "Verify your Send Me account", f"{S.frontend_url}/verify-email?token={raw}")
+    send_email(user.email, "Verify your Send Me account", f"{S.frontend_url}/#/verify?token={raw}")
     return {"user": user_out(user), **tokens(user)}
 
 
@@ -171,7 +171,7 @@ def resend_verification(user: CurrentUser, db: DB):
         return {"ok": True}
     raw = _issue(db, user, "verify_email", 60 * 48)
     db.commit()
-    send_email(user.email, "Verify your Send Me account", f"{S.frontend_url}/verify-email?token={raw}")
+    send_email(user.email, "Verify your Send Me account", f"{S.frontend_url}/#/verify?token={raw}")
     return {"ok": True}
 
 
@@ -185,7 +185,7 @@ def forgot_password(body: ForgotIn, db: DB):
     if user and user.is_active:
         raw = _issue(db, user, "reset_password", 60)
         db.commit()
-        send_email(user.email, "Reset your Send Me password", f"{S.frontend_url}/reset-password?token={raw}")
+        send_email(user.email, "Reset your Send Me password", f"{S.frontend_url}/#/reset?token={raw}")
     # Same answer either way so the endpoint cannot be used to discover accounts.
     return {"ok": True, "message": "If that email has an account, a reset link is on its way."}
 

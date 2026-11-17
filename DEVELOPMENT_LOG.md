@@ -26,3 +26,8 @@
 - Tracking API `GET /orders/{id}/tracking`: rider position only while On the Way, stale flag, private to the student. Rider GPS removed from generic order output.
 - Unlisted requests now notify shop staff and all super admins at once; `/admin/requests` lists and prices across shops.
 - 65 tests pass. Google was never called for real (no key). No real coordinates exist yet.
+
+## Session 6 (approach change: build everything, no blocking on credentials)
+- Backend: simulated checkout (MockProvider) when no Paystack key and ENV != production; demo seed (`python -m app.seed_demo`, dev only); `/config`, `/admin/integrations`, `/products/popular`; static serving of `frontend/dist`.
+- Frontend (`frontend/`): Vite + React + TypeScript + Tailwind PWA, hash routing, Leaflet/OpenStreetMap map (no key). Student app done: auth, home, explore/shop, product, cart, request item, checkout, simulated payment, orders, live tracking, account, notifications.
+- `frontend/e2e/student.cjs` drives the student journey in a phone-size browser. Passing.

@@ -1,0 +1,26 @@
+@import "leaflet/dist/leaflet.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { -webkit-tap-highlight-color: transparent; padding-bottom: env(safe-area-inset-bottom); }
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply bg-teal text-white hover:bg-teal-dark; }
+  .btn-navy { @apply bg-navy text-white hover:bg-ink; }
+  .btn-soft { @apply bg-mint text-teal-dark hover:bg-teal/20; }
+  .btn-ghost { @apply border border-slate-200 bg-white text-ink hover:bg-slate-50; }
+  .btn-danger { @apply bg-red-50 text-bad hover:bg-red-100; }
+  .input { @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/30; }
+  .card { @apply rounded-3xl bg-white shadow-card; }
+  .label { @apply mb-1 block text-sm font-semibold text-navy; }
+  .chip { @apply whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy; }
+  .chip-on { @apply border-navy bg-navy text-white; }
+}
+.leaflet-container { font-family: inherit; }
+.pin { display:grid; place-items:center; width:30px; height:30px; border-radius:50% 50% 50% 0; transform: rotate(-45deg); color:#fff; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,.3); border:2px solid #fff; }
+.pin > span { transform: rotate(45deg); font-size:13px; }
+.pulse { animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(22,166,160,.5)} 100%{box-shadow:0 0 0 16px rgba(22,166,160,0)} }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } * { transition: none !important; } }

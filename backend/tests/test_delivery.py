@@ -217,3 +217,32 @@ def test_rider_without_email_signs_in_with_phone(client, admin):
     uid = r.json()["id"]
     assert client.post(f"/admin/users/{uid}/password", headers=admin, json={"password": "newsammy123"}).status_code == 200
     assert login(client, "0264944652", "newsammy123")
+
+
+def test_mock_payment_mode_needs_explicit_simulated_confirmation(client, student, shop_id, fee_set, monkeypatch):
+    """With no Paystack key outside production, checkout is simulated and never auto-succeeds."""
+    from app.config import get_settings
+    from app.services import payments
+    from .conftest import place_order
+    monkeypatch.setattr(get_settings(), "paystack_secret_key", "")
+    payments.set_provider_factory(None)
+    assert client.get("/config").json()["payment_mode"] == "mock"
+    o = place_order(client, student, shop_id)
+    pay = client.post(f"/orders/{o['id']}/pay", headers=student).json()
+    assert pay["authorization_url"].startswith("/#/pay/mock?reference=")
+    v = client.post(f"/payments/verify/{pay['reference']}", headers=student).json()
+    assert v["payment_status"] == "abandoned"  # clicking Pay alone does not succeed
+    pay = client.post(f"/orders/{o['id']}/pay", headers=student).json()
+    assert client.post(f"/dev/mock-pay/{pay['reference']}", headers=student, json={"outcome": "success"}).status_code == 200
+    v = client.post(f"/payments/verify/{pay['reference']}", headers=student).json()
+    assert v["payment_status"] == "success" and v["order"]["payment_status"] == "paid"
+    monkeypatch.setattr(get_settings(), "env", "production")
+    assert client.get("/config").json()["payment_mode"] == "unconfigured"
+    assert client.post(f"/dev/mock-pay/{pay['reference']}", headers=student, json={"outcome": "success"}).status_code == 404
+
+
+def test_integrations_and_popular(client, admin, student):
+    i = client.get("/admin/integrations", headers=admin).json()
+    assert i["payments"]["mode"] in ("mock", "test", "live") and i["launch_checklist"]
+    assert client.get("/admin/integrations", headers=student).status_code == 403
+    assert len(client.get("/products/popular").json()) >= 1

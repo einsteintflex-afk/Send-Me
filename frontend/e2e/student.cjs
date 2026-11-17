@@ -1,0 +1,33 @@
+// End-to-end check of the student journey against a running server. Usage: BASE=http://localhost:8000 SHOTS=dir node student.cjs
+const { chromium } = require("playwright");
+const BASE = process.env.BASE || "http://localhost:8000"; const SHOTS = process.env.SHOTS || "/tmp";
+const ok = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("ok  " + m); };
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 }); const p = await ctx.newPage();
+  const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && !m.text().includes("tile.openstreetmap") && !m.text().includes("ERR_") && errs.push(m.text()));
+  const shot = (n) => p.screenshot({ path: `${SHOTS}/${n}.png` });
+  const phone = "05" + Math.floor(10000000 + Math.random() * 89999999);
+  await p.goto(BASE + "/#/welcome"); await p.getByText("Create account").first().waitFor(); await shot("01-welcome");
+  await p.getByRole("link", { name: "Create account" }).click();
+  await p.getByLabel("Full name").fill("Ama Mensah"); await p.getByLabel("Phone number").fill(phone); await p.getByLabel("Email").fill(`ama${Date.now()}@example.com`);
+  await p.getByLabel("Password").fill("password123"); await p.getByLabel("Hostel / residence").selectOption({ label: "R-block" }); await p.getByLabel("Room number").fill("B404"); await shot("02-register");
+  await p.getByRole("button", { name: "Create account" }).click();
+  await p.getByText("What do you need today?").waitFor(); ok(true, "registered and landed on home"); await p.waitForTimeout(600); await shot("03-home");
+  ok(await p.getByText("R-block, Room B404").count() > 0, "home shows delivery destination");
+  await p.getByRole("link", { name: "Explore" }).click(); await p.getByText("UGMSA Mini Mart").first().waitFor();
+  ok(await p.getByText("057 696 6929").count() > 0, "shop phone shown"); await p.waitForTimeout(500); await shot("04-explore");
+  await p.getByLabel("Search", { exact: true }).fill("coke"); await p.keyboard.press("Enter"); await p.getByText("Coca-cola(1 litre)").waitFor(); ok(true, "search 'coke' finds Coca-cola"); await shot("05-search");
+  await p.getByText("Coca-cola(1 litre)").first().click(); await p.getByText("GH₵ 19.00").first().waitFor(); await shot("06-product");
+  await p.getByRole("button", { name: /^Add/ }).click(); await p.getByText("Your cart").waitFor(); ok(true, "added to cart");
+  await p.getByRole("link", { name: /Request an item that isn't listed/ }).click();
+  await p.getByLabel("What do you want to buy?").fill("A4 notebook"); await p.getByLabel("Preferred brand").fill("Any"); await shot("07-request");
+  await p.getByRole("button", { name: "Send request" }).click(); await p.getByText("Price and availability need shop confirmation.").waitFor(); ok(true, "unlisted request in cart"); await shot("08-cart");
+  await p.getByRole("button", { name: "Continue to checkout" }).click(); await p.getByText("Order summary").waitFor(); await p.waitForTimeout(800); await shot("09-checkout");
+  ok(await p.getByText(/Delivery fee \(/).count() > 0, "distance-based delivery fee shown");
+  await p.getByRole("button", { name: /^Pay GH₵/ }).click(); await p.getByText("Simulate successful payment").waitFor(); ok(true, "payment page (simulated)"); await shot("10-pay");
+  await p.getByRole("button", { name: "Simulate successful payment" }).click(); await p.getByText("Payment received. Order confirmed!").waitFor(); ok(true, "order confirmed only after verified payment");
+  ok(await p.getByText(/SM-\d{4}-\d{6}/).count() > 0, "order number assigned"); await shot("11-confirmed");
+  await p.getByRole("link", { name: "Orders" }).click(); await p.getByText("Your orders").waitFor(); await shot("12-orders"); ok(await p.getByText("Pending").count() > 0, "order history lists order");
+  ok(errs.length === 0, "no browser errors " + errs.join(" | "));
+  await b.close();
+})().catch((e) => { console.error(e.message); process.exit(1); });
